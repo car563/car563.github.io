@@ -291,6 +291,7 @@
     <div class="key-hint"><span class="key-box">Click x5</span> or <b>Slam</b> to explode</div>
     <div class="key-hint"><span class="key-box">E</span> Quick Spawn</div>
     <div class="key-hint"><span class="key-box">M</span> Toggle UI</div>
+    <div class="key-hint"><span class="key-box">T</span> Slow Motion</div> <!-- NEW HINT -->
     
     <div class="control-group">
         <div class="slider-label">
@@ -298,6 +299,15 @@
             <span id="gravity-val">1.5</span>
         </div>
         <input type="range" id="gravity-slider" min="-2" max="5" step="0.1" value="1.5">
+    </div>
+
+    <!-- NEW: Size Slider -->
+    <div class="control-group">
+        <div class="slider-label">
+            <span>Spawn Size</span>
+            <span id="size-val">1.0x</span>
+        </div>
+        <input type="range" id="size-slider" min="0.5" max="3" step="0.1" value="1.0">
     </div>
 </div>
 
@@ -419,6 +429,7 @@
 
     // --- GAME STATE MANAGEMENT ---
     let isGameRunning = false;
+    let isSlowMotion = false; // NEW STATE
     const homeMenu = document.getElementById('home-menu');
 
     function togglePause() {
@@ -470,6 +481,7 @@
 
     // --- GLOBAL SPAWN SELECTION ---
     let currentSpawnType = 'block';
+    let spawnScale = 1.0; // Default size multiplier
 
     function selectAndSpawn(type) {
         currentSpawnType = type;
@@ -498,12 +510,16 @@
             entityType: type 
         };
 
+        // Apply scale ONLY if not a person (ragdoll)
+        const s = (type === 'person') ? 1.0 : spawnScale;
+
         try {
             if (type === 'block') {
-                const size = 50 + Math.random() * 40;
+                // FIXED SIZE: Removed Math.random() so they are all uniform
+                const size = 60 * s; 
                 const b = Bodies.rectangle(posX, posY, size, size, { 
                     render: { fillStyle: color }, 
-                    chamfer: { radius: 4 }, 
+                    chamfer: { radius: 4 * s }, 
                     restitution: 0.4,
                     frictionAir: 0.01 
                 });
@@ -512,12 +528,12 @@
                 Composite.add(world, b);
             } 
             else if (type === 'heavy') {
-                const size = 60;
+                const size = 60 * s;
                 const b = Bodies.rectangle(posX, posY, size, size, { 
                     render: { fillStyle: '#64748b' }, // Slate grey
-                    chamfer: { radius: 2 }, 
+                    chamfer: { radius: 2 * s }, 
                     restitution: 0.1, // Low bounce (heavy thud)
-                    density: 50, // EXTREMELY DENSE (1000x previous value)
+                    density: 50, // EXTREMELY DENSE
                     friction: 0.6,
                     frictionAir: 0.005
                 });
@@ -526,7 +542,7 @@
                 Composite.add(world, b);
             }
             else if (type === 'blackhole') {
-                const b = Bodies.circle(posX, posY, 30, {
+                const b = Bodies.circle(posX, posY, 30 * s, {
                     render: { fillStyle: '#000000' },
                     density: 100, // Extremely heavy so it doesn't get pushed around easily
                     frictionAir: 0.1, // High drag to keep it stable
@@ -538,7 +554,8 @@
                 Composite.add(world, b);
             }
             else if (type === 'ball') {
-                const r = 25 + Math.random() * 15;
+                // FIXED SIZE: Removed Math.random()
+                const r = 30 * s;
                 const b = Bodies.circle(posX, posY, r, { 
                     render: { fillStyle: color }, 
                     restitution: 0.8,
@@ -551,32 +568,33 @@
             }
             else if (type === 'car') {
                 const group = Body.nextGroup(true);
-                const chassis = Bodies.rectangle(posX, posY, 100, 20, { 
+                // Scale car dimensions and offsets
+                const chassis = Bodies.rectangle(posX, posY, 100 * s, 20 * s, { 
                     collisionFilter: { group: group },
                     render: { fillStyle: color },
-                    chamfer: { radius: 5 },
+                    chamfer: { radius: 5 * s },
                     density: 0.004
                 });
-                const cabin = Bodies.trapezoid(posX, posY - 25, 60, 30, 0.3, {
+                const cabin = Bodies.trapezoid(posX, posY - 25 * s, 60 * s, 30 * s, 0.3, {
                     collisionFilter: { group: group },
                     render: { fillStyle: '#1e293b' },
                     density: 0.001
                 });
                 const body = Body.create({ parts: [chassis, cabin] });
-                const wheel1 = Bodies.circle(posX - 30, posY + 15, 14, { 
+                const wheel1 = Bodies.circle(posX - 30 * s, posY + 15 * s, 14 * s, { 
                     collisionFilter: { group: group },
                     friction: 0.8,
                     render: { fillStyle: '#333' },
                     density: 0.002
                 });
-                const wheel2 = Bodies.circle(posX + 30, posY + 15, 14, { 
+                const wheel2 = Bodies.circle(posX + 30 * s, posY + 15 * s, 14 * s, { 
                     collisionFilter: { group: group },
                     friction: 0.8,
                     render: { fillStyle: '#333' },
                     density: 0.002
                 });
-                const axel1 = Constraint.create({ bodyA: body, pointB: { x: -30, y: 15 }, bodyB: wheel1, stiffness: 0.2, length: 0, render: { visible: false } });
-                const axel2 = Constraint.create({ bodyA: body, pointB: { x: 30, y: 15 }, bodyB: wheel2, stiffness: 0.2, length: 0, render: { visible: false } });
+                const axel1 = Constraint.create({ bodyA: body, pointB: { x: -30 * s, y: 15 * s }, bodyB: wheel1, stiffness: 0.2, length: 0, render: { visible: false } });
+                const axel2 = Constraint.create({ bodyA: body, pointB: { x: 30 * s, y: 15 * s }, bodyB: wheel2, stiffness: 0.2, length: 0, render: { visible: false } });
                 
                 [body, wheel1, wheel2].forEach(p => Object.assign(p, commonProps));
                 body.customType = 'carBody';
@@ -585,6 +603,7 @@
                 Composite.add(world, [body, wheel1, wheel2, axel1, axel2]);
             }
             else if (type === 'person') {
+                // NOTE: People ignore 's' (spawnScale) and use default size
                 const group = Body.nextGroup(true);
                 const startY = posY;
                 const head = Bodies.circle(posX, startY - 25, 12, { collisionFilter: { group: group }, render: { fillStyle: '#ffccaa' } });
@@ -630,14 +649,14 @@
                 Composite.add(world, [head, torso, rightArm, leftArm, rightLeg, leftLeg, neck, armRA, armLA, legRA, legLA]);
             }
             else if (type === 'launcher') {
-                const gunBody = Bodies.rectangle(posX, posY, 60, 20, {
+                const gunBody = Bodies.rectangle(posX, posY, 60 * s, 20 * s, {
                     render: { fillStyle: '#475569' },
-                    chamfer: { radius: 4 },
+                    chamfer: { radius: 4 * s },
                     density: 0.05 // Heavy
                 });
-                const handle = Bodies.rectangle(posX - 15, posY + 15, 15, 30, {
+                const handle = Bodies.rectangle(posX - 15 * s, posY + 15 * s, 15 * s, 30 * s, {
                     render: { fillStyle: '#334155' },
-                    chamfer: { radius: 2 }
+                    chamfer: { radius: 2 * s }
                 });
                 const body = Body.create({ parts: [gunBody, handle] });
                 
@@ -664,13 +683,18 @@
         launcher.launcher.lastShot = now;
         playShootSound();
         
-        // Calculate barrel position
-        const len = 35;
+        // Calculate barrel position. Note: We assume standard scale for projectile origin for now, 
+        // or we could estimate scale from area. But for simplicity, we keep offset standard-ish 
+        // or we could store scale on launcher object. 
+        // Let's approximate: 
+        const approximateScale = (launcher.bounds.max.x - launcher.bounds.min.x) / 75; // 60+15 approx
+        
+        const len = 35 * approximateScale;
         const angle = launcher.angle;
         const barrelX = launcher.position.x + Math.cos(angle) * len;
         const barrelY = launcher.position.y + Math.sin(angle) * len;
         
-        // Create Projectile
+        // Create Projectile (Scale it too? Let's keep bullets standard size for consistency)
         const projectile = Bodies.circle(barrelX, barrelY, 6, {
             density: 0.05,
             restitution: 0.5,
@@ -689,6 +713,7 @@
         // IMPORTANT: Assign unique group ID to prevent wall destruction
         projectile.groupId = Math.random().toString(36).substr(2, 9);
         projectile.entityType = 'projectile';
+        projectile.trail = []; // NEW: Array to store trail positions
         
         Composite.add(world, projectile);
         
@@ -999,8 +1024,48 @@
         const bodies = Composite.allBodies(world);
         const time = engine.timing.timestamp;
         
+        // --- NEW: Draw Projectile Trails ---
+        // We do this loop separately or integrate it. 
+        // Let's iterate bodies once to keep it efficient, but we need to draw trails underneath objects ideally?
+        // Canvas draws in order, so drawing trails here puts them ON TOP. 
+        // To draw BEHIND, we'd need to use 'beforeRender', but 'beforeRender' clears the canvas.
+        // Drawing on top is fine for glowing energy bolts.
+
         for (let i = 0; i < bodies.length; i += 1) {
             const body = bodies[i];
+
+            // Update Trail Data
+            if (body.entityType === 'projectile') {
+                if (!body.trail) body.trail = [];
+                // Add current position
+                body.trail.push({ x: body.position.x, y: body.position.y });
+                // Limit trail length
+                if (body.trail.length > 20) body.trail.shift();
+
+                // Draw Trail
+                if (body.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(body.trail[0].x, body.trail[0].y);
+                    for (let j = 1; j < body.trail.length; j++) {
+                        ctx.lineTo(body.trail[j].x, body.trail[j].y);
+                    }
+                    // Glow effect
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#ef4444';
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    
+                    // Core
+                    ctx.strokeStyle = 'rgba(255, 200, 200, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Reset shadow for other objects
+                    ctx.shadowBlur = 0;
+                }
+            }
+
             const x = body.position.x;
             const y = body.position.y;
             const angle = body.angle;
@@ -1222,6 +1287,19 @@
                 }
             }
         }
+        
+        // --- SLOW MOTION INDICATOR ---
+        if (isSlowMotion) {
+            ctx.save();
+            ctx.font = '900 24px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#38bdf8';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 4;
+            ctx.textAlign = 'center';
+            ctx.strokeText("SLOW MOTION", render.canvas.width / 2, 50);
+            ctx.fillText("SLOW MOTION", render.canvas.width / 2, 50);
+            ctx.restore();
+        }
     });
 
     Events.on(render, 'beforeRender', function() {
@@ -1351,6 +1429,13 @@
         // Only allow game controls if game is running
         if (!isGameRunning) return;
 
+        // Toggle Slow Motion on T
+        if (e.key.toLowerCase() === 't') {
+            isSlowMotion = !isSlowMotion;
+            engine.timing.timeScale = isSlowMotion ? 0.2 : 1.0;
+            // Adjust audio playback rate? (Optional polish: pitch shift sounds)
+        }
+
         // SPAWN OR DELETE SELECTED ITEM
         if (e.key.toLowerCase() === 'e') {
             if (currentSpawnType === 'delete') {
@@ -1419,10 +1504,56 @@
 
     const gravitySlider = document.getElementById('gravity-slider');
     const gravityVal = document.getElementById('gravity-val');
+
+    // --- ZERO GRAVITY FRICTION LOGIC ---
+    function updateFriction(isZeroG) {
+        const bodies = Composite.allBodies(world);
+        bodies.forEach(body => {
+            if (isZeroG) {
+                // Save original friction if we haven't yet
+                if (typeof body.originalFrictionAir === 'undefined') {
+                    body.originalFrictionAir = body.frictionAir;
+                }
+                body.frictionAir = 0; // Frictionless in vacuum
+            } else {
+                // Restore original friction if available
+                if (typeof body.originalFrictionAir !== 'undefined') {
+                    body.frictionAir = body.originalFrictionAir;
+                }
+            }
+        });
+    }
+
     gravitySlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         engine.gravity.y = val;
         gravityVal.innerText = val.toFixed(1);
+        
+        // If gravity is 0, disable air resistance
+        updateFriction(val === 0);
+    });
+
+    // Apply zero friction to NEW objects if spawned during zero G
+    Events.on(world, 'afterAdd', (event) => {
+        if (engine.gravity.y === 0) {
+            const objects = Array.isArray(event.object) ? event.object : [event.object];
+            objects.forEach(obj => {
+                if (obj.type === 'body') {
+                    if (typeof obj.originalFrictionAir === 'undefined') {
+                        obj.originalFrictionAir = obj.frictionAir;
+                    }
+                    obj.frictionAir = 0;
+                }
+            });
+        }
+    });
+
+    // NEW: Spawn Size Slider Logic
+    const sizeSlider = document.getElementById('size-slider');
+    const sizeVal = document.getElementById('size-val');
+    sizeSlider.addEventListener('input', (e) => {
+        spawnScale = parseFloat(e.target.value);
+        sizeVal.innerText = spawnScale.toFixed(1) + 'x';
     });
 
     function clearAllShapes() {
