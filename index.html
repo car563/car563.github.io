@@ -42,6 +42,37 @@
             z-index: 10;
             min-width: 220px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            
+            /* NEW: Collapsible Animation (Like Spawn Menu) */
+            max-height: 60px; /* Collapsed height just enough for title */
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        /* NEW: Expand on Hover */
+        #ui-left:hover {
+            max-height: 80vh; /* Expand to fit content */
+            overflow-y: auto; /* Enable scroll if needed */
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        /* NEW: Scrollbar for Main Menu */
+        #ui-left::-webkit-scrollbar {
+            width: 6px;
+        }
+        #ui-left::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        #ui-left::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        #ui-left::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
         }
 
         /* --- HOME MENU STYLES --- */
@@ -109,10 +140,46 @@
         /* Hide game UI when menu is open */
         body.menu-active #ui-left,
         body.menu-active #spawn-menu,
+        body.menu-active #fps-counter,
+        body.menu-active #item-counter,
         body.gui-hidden #ui-left,
         body.gui-hidden #spawn-menu {
             opacity: 0;
             pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        /* NEW: FPS Counter Styles */
+        #fps-counter {
+            position: absolute;
+            top: 6px;
+            left: 24px;
+            color: rgba(248, 250, 252, 0.4);
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 50;
+            pointer-events: none;
+            letter-spacing: 1px;
+        }
+
+        /* NEW: Item Counter Styles */
+        #item-counter {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(248, 250, 252, 0.6);
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 50;
+            pointer-events: none;
+            letter-spacing: 1px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 8px 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
             transition: opacity 0.3s;
         }
 
@@ -142,10 +209,28 @@
         }
 
         #spawn-menu:hover {
-            max-height: 450px;
+            max-height: 70vh; /* Limit height to 70% of screen */
+            overflow-y: auto; /* Enable Vertical Scrolling */
             opacity: 1;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
             background: rgba(15, 23, 42, 0.95);
+        }
+
+        /* Custom Scrollbar for Spawn Menu */
+        #spawn-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        #spawn-menu::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        #spawn-menu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        #spawn-menu::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
         }
 
         h1 {
@@ -155,6 +240,23 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
             font-weight: 800;
+            /* NEW: Flex layout for the arrow */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* NEW: Arrow indicator for Main Menu */
+        h1::after {
+            content: '▼';
+            font-size: 0.8em;
+            transition: transform 0.4s;
+            color: rgba(255,255,255,0.5);
+        }
+
+        #ui-left:hover h1::after {
+            transform: rotate(180deg);
+            color: var(--accent);
         }
 
         #spawn-menu h2 {
@@ -285,6 +387,11 @@
     <div class="menu-hint">Press <b>ESC</b> to Pause / Resume</div>
 </div>
 
+<!-- NEW: FPS Counter Element -->
+<div id="fps-counter">FPS: 60</div>
+<!-- NEW: Item Counter Element -->
+<div id="item-counter">Items: 0</div>
+
 <div id="ui-left">
     <h1>Physics Lab</h1>
     <p style="font-size: 0.85rem; color: #cbd5e1;">Advanced AI Enabled.</p>
@@ -311,6 +418,15 @@
         <!-- UPDATED: min to 0.1, max to 5 -->
         <input type="range" id="size-slider" min="0.1" max="5" step="0.1" value="1.0">
     </div>
+
+    <!-- NEW: Spawn Count Slider -->
+    <div class="control-group">
+        <div class="slider-label">
+            <span>Spawn Count</span>
+            <span id="count-val">1</span>
+        </div>
+        <input type="range" id="count-slider" min="1" max="20" step="1" value="1">
+    </div>
 </div>
 
 <div id="spawn-menu">
@@ -320,6 +436,7 @@
     <button class="spawn-btn" onclick="selectAndSpawn('heavy')">🪨 Heavy Metal</button>
     <button class="spawn-btn" onclick="selectAndSpawn('blackhole')">⚫ Black Hole</button>
     <button class="spawn-btn" onclick="selectAndSpawn('ball')">🎱 Sphere</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('water')">💧 Water</button> <!-- NEW BUTTON -->
     <button class="spawn-btn" onclick="selectAndSpawn('car')">🏎️ Sport Car</button>
     <button class="spawn-btn" onclick="selectAndSpawn('person')">🏃 Ragdoll (AI)</button>
     <button class="spawn-btn" onclick="selectAndSpawn('launcher')">🔫 Blaster</button>
@@ -406,7 +523,11 @@
 
     const { Engine, Render, Runner, Bodies, Composite, MouseConstraint, Mouse, Vector, Events, Body, Constraint } = Matter;
 
-    const engine = Engine.create();
+    const engine = Engine.create({
+        // OPTIMIZATION: Reduce iterations for higher performance (0 lag)
+        positionIterations: 4, 
+        velocityIterations: 3
+    });
     const world = engine.world;
     engine.gravity.y = 1.5;
 
@@ -566,6 +687,24 @@
                 });
                 Object.assign(b, commonProps);
                 b.customType = 'sphere';
+                Composite.add(world, b);
+            }
+            // NEW: Water Particle Logic
+            else if (type === 'water') {
+                // Randomize radius slightly to prevent "crystallization" (perfect stacking)
+                // This forces particles to slide over each other like liquid
+                const r = (7 + Math.random() * 4) * s; 
+                
+                const b = Bodies.circle(posX, posY, r, {
+                    render: { fillStyle: 'rgba(56, 189, 248, 0.6)' }, // Slightly more transparent
+                    friction: 0.0,       // No friction when moving
+                    frictionStatic: 0.0, // NEW: No friction when standing still (instant slide)
+                    frictionAir: 0.002,  // Very low air resistance
+                    restitution: 0.05,   // Low bounce (stops it from jittering)
+                    density: 0.01        // Heavy enough to push small objects
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'water';
                 Composite.add(world, b);
             }
             else if (type === 'car') {
@@ -766,6 +905,29 @@
     Events.on(engine, 'beforeUpdate', function(event) {
         const bodies = Composite.allBodies(world);
         const time = engine.timing.timestamp;
+        
+        // --- PERFORMANCE: VOID CLEANUP ---
+        // If objects fall out of the map (way below screen), remove them to save memory
+        const fallenBodies = bodies.filter(b => b.position.y > window.innerHeight + 1000);
+        if (fallenBodies.length > 0) {
+            Composite.remove(world, fallenBodies);
+        }
+
+        // --- PERFORMANCE: ANTI-LAG SYSTEM ---
+        // If too many items, delete the oldest dynamic ones (excluding walls/blackholes)
+        // Limit increased to 600 dynamic bodies
+        const dynamicBodies = bodies.filter(b => !b.isStatic && b.customType !== 'blackhole');
+        if (dynamicBodies.length > 600) {
+            // Sort by creation time (oldest first) or just take the first ones since array order usually matches
+            // We remove the oldest 5 to quickly get back under limit
+            const toRemove = dynamicBodies.slice(0, 5); 
+            // Don't delete the car the player is currently driving if possible
+            const safeToRemove = toRemove.filter(b => !b.driver);
+            if (safeToRemove.length > 0) {
+                Composite.remove(world, safeToRemove);
+            }
+        }
+
         const ragdolls = bodies.filter(b => b.customType === 'ragdoll');
         const interactables = bodies.filter(b => b.customType === 'crate' || b.customType === 'sphere' || b.customType === 'carBody');
         const launchers = bodies.filter(b => b.customType === 'launcher');
@@ -1123,15 +1285,15 @@
     });
 
     // --- Debris System ---
-    function createDebris(x, y, color, count = 8) {
+    function createDebris(x, y, color, count = 5) { // OPTIMIZATION: Default count reduced from 8 to 5
         const particles = [];
         for (let i = 0; i < count; i++) {
-            const size = 6 + Math.random() * 8;
+            const size = 5 + Math.random() * 6; // Slightly smaller debris
             const particle = Bodies.polygon(x, y, 3 + Math.floor(Math.random() * 2), size, {
                 render: { fillStyle: color },
                 friction: 0.5,
                 restitution: 0.5,
-                frictionAir: 0.05
+                frictionAir: 0.08 // OPTIMIZATION: Higher drag so they stop calculating physics sooner
             });
             const force = {
                 x: (Math.random() - 0.5) * 0.02,
@@ -1141,7 +1303,8 @@
             particles.push(particle);
         }
         Composite.add(world, particles);
-        setTimeout(() => Composite.remove(world, particles), 1500);
+        // OPTIMIZATION: Remove debris faster (1000ms instead of 1500ms)
+        setTimeout(() => Composite.remove(world, particles), 1000);
     }
 
     // --- Custom Texture Renderer ---
@@ -1149,6 +1312,30 @@
         const ctx = render.context;
         const bodies = Composite.allBodies(world);
         const time = engine.timing.timestamp;
+
+        // --- FPS COUNTER LOGIC ---
+        // We use a closure-like structure here for variables or global scope
+        if (!window.fpsFrameCount) {
+            window.fpsFrameCount = 0;
+            window.fpsLastTime = performance.now();
+            window.fpsElem = document.getElementById('fps-counter');
+        }
+        
+        window.fpsFrameCount++;
+        const now = performance.now();
+        if (now - window.fpsLastTime >= 1000) {
+            const fps = Math.round((window.fpsFrameCount * 1000) / (now - window.fpsLastTime));
+            if (window.fpsElem) window.fpsElem.innerText = 'FPS: ' + fps;
+            window.fpsFrameCount = 0;
+            window.fpsLastTime = now;
+        }
+
+        // --- NEW: ITEM COUNTER LOGIC ---
+        const itemElem = document.getElementById('item-counter');
+        if (itemElem && window.fpsFrameCount % 10 === 0) { // Update periodically
+             const count = Composite.allBodies(world).filter(b => !b.isStatic).length;
+             itemElem.innerText = 'Items: ' + count;
+        }
         
         // --- NEW: Draw Projectile Trails ---
         // We do this loop separately or integrate it. 
@@ -1288,6 +1475,14 @@
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.beginPath();
                 ctx.arc(-r * 0.3, -r * 0.3, r * 0.25, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            // Water (Simple highlight)
+            if (body.customType === 'water') {
+                const r = body.circleRadius;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(-r * 0.2, -r * 0.2, r * 0.3, 0, 2 * Math.PI);
                 ctx.fill();
             }
             // Wheel
@@ -1576,7 +1771,18 @@
                     }
                 }
             } else {
-                spawnEntity(currentSpawnType, mouse.position.x, mouse.position.y);
+                // MULTI-SPAWN LOGIC
+                const countSlider = document.getElementById('count-slider');
+                const count = parseInt(countSlider.value);
+                
+                for (let i = 0; i < count; i++) {
+                    // Add jitter if spawning multiple so they don't overlap perfectly
+                    const jitter = count > 1 ? 50 : 0; 
+                    const offX = (Math.random() - 0.5) * jitter;
+                    const offY = (Math.random() - 0.5) * jitter;
+                    
+                    spawnEntity(currentSpawnType, mouse.position.x + offX, mouse.position.y + offY);
+                }
             }
         }
         
@@ -1680,6 +1886,13 @@
     sizeSlider.addEventListener('input', (e) => {
         spawnScale = parseFloat(e.target.value);
         sizeVal.innerText = spawnScale.toFixed(1) + 'x';
+    });
+
+    // NEW: Spawn Count Slider Logic
+    const countSlider = document.getElementById('count-slider');
+    const countVal = document.getElementById('count-val');
+    countSlider.addEventListener('input', (e) => {
+        countVal.innerText = e.target.value;
     });
 
     function clearAllShapes() {
