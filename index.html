@@ -427,6 +427,12 @@
         </div>
         <input type="range" id="count-slider" min="1" max="20" step="1" value="1">
     </div>
+
+    <!-- NEW: Item Limit Toggle -->
+    <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
+        <span class="slider-label" style="margin: 0;">Item Limit (Anti-Lag)</span>
+        <input type="checkbox" id="limit-toggle" checked style="accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer;">
+    </div>
 </div>
 
 <div id="spawn-menu">
@@ -691,18 +697,26 @@
             }
             // NEW: Water Particle Logic
             else if (type === 'water') {
-                // Randomize radius slightly to prevent "crystallization" (perfect stacking)
-                // This forces particles to slide over each other like liquid
-                const r = (7 + Math.random() * 4) * s; 
+                // PHYSICS UPDATE: Smaller particles + Liquid properties
+                // Smaller radius (r) helps it conform to shapes better
+                const r = (5 + Math.random() * 2) * s; 
                 
                 const b = Bodies.circle(posX, posY, r, {
-                    render: { fillStyle: 'rgba(56, 189, 248, 0.6)' }, // Slightly more transparent
-                    friction: 0.0,       // No friction when moving
-                    frictionStatic: 0.0, // NEW: No friction when standing still (instant slide)
-                    frictionAir: 0.002,  // Very low air resistance
-                    restitution: 0.05,   // Low bounce (stops it from jittering)
-                    density: 0.01        // Heavy enough to push small objects
+                    render: { fillStyle: 'rgba(56, 189, 248, 0.6)' },
+                    friction: 0.0,       // Zero friction (Slippery)
+                    frictionStatic: 0.0, // Instantly slides
+                    frictionAir: 0.001,  // Extremely low drag
+                    restitution: 0.0,    // Zero bounce (Real liquids don't bounce like balls)
+                    density: 0.005,      // Adjusted density for fluid weight
+                    slop: 0.1            // Allows slight overlap for softer feel
                 });
+                
+                // Add initial "Spray" velocity
+                Body.setVelocity(b, {
+                    x: (Math.random() - 0.5) * 5, 
+                    y: (Math.random() - 0.5) * 5
+                });
+
                 Object.assign(b, commonProps);
                 b.customType = 'water';
                 Composite.add(world, b);
@@ -916,15 +930,18 @@
         // --- PERFORMANCE: ANTI-LAG SYSTEM ---
         // If too many items, delete the oldest dynamic ones (excluding walls/blackholes)
         // Limit increased to 600 dynamic bodies
-        const dynamicBodies = bodies.filter(b => !b.isStatic && b.customType !== 'blackhole');
-        if (dynamicBodies.length > 600) {
-            // Sort by creation time (oldest first) or just take the first ones since array order usually matches
-            // We remove the oldest 5 to quickly get back under limit
-            const toRemove = dynamicBodies.slice(0, 5); 
-            // Don't delete the car the player is currently driving if possible
-            const safeToRemove = toRemove.filter(b => !b.driver);
-            if (safeToRemove.length > 0) {
-                Composite.remove(world, safeToRemove);
+        // NEW: Check toggle state before deleting
+        if (isLimitActive) {
+            const dynamicBodies = bodies.filter(b => !b.isStatic && b.customType !== 'blackhole');
+            if (dynamicBodies.length > 600) {
+                // Sort by creation time (oldest first) or just take the first ones since array order usually matches
+                // We remove the oldest 5 to quickly get back under limit
+                const toRemove = dynamicBodies.slice(0, 5); 
+                // Don't delete the car the player is currently driving if possible
+                const safeToRemove = toRemove.filter(b => !b.driver);
+                if (safeToRemove.length > 0) {
+                    Composite.remove(world, safeToRemove);
+                }
             }
         }
 
@@ -1469,20 +1486,22 @@
                 ctx.arc(0, 0, r, 0, 2 * Math.PI);
                 ctx.fill();
             }
-            // Sphere
-            if (body.customType === 'sphere') {
-                const r = body.circleRadius;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.beginPath();
-                ctx.arc(-r * 0.3, -r * 0.3, r * 0.25, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-            // Water (Simple highlight)
+            // Water (Real-Life Liquid Rendering)
             if (body.customType === 'water') {
                 const r = body.circleRadius;
+                
+                // 1. Draw Larger Body (Overlap Effect)
+                // We draw the circle 1.3x larger than its physics body.
+                // This makes the particles visually merge into a blob.
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.55)';
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.3, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // 2. Liquid Highlight (Glint)
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
                 ctx.beginPath();
-                ctx.arc(-r * 0.2, -r * 0.2, r * 0.3, 0, 2 * Math.PI);
+                ctx.arc(-r * 0.3, -r * 0.3, r * 0.5, 0, 2 * Math.PI);
                 ctx.fill();
             }
             // Wheel
@@ -1895,6 +1914,13 @@
         countVal.innerText = e.target.value;
     });
 
+    // NEW: Toggle for Anti-Lag Item Limit
+    let isLimitActive = true;
+    const limitToggle = document.getElementById('limit-toggle');
+    limitToggle.addEventListener('change', (e) => {
+        isLimitActive = e.target.checked;
+    });
+
     function clearAllShapes() {
         const bodies = Composite.allBodies(world);
         const toRemove = bodies.filter(b => !b.isStatic);
@@ -1916,9 +1942,9 @@
     function triggerExplosion(sourceBody) {
         if (sourceBody.isExploding) return;
         
-        // --- SAFETY CHECK: Never explode walls, undefined groups, or BLACK HOLES ---
-        // Added entityType check as a backup
-        if (sourceBody.isStatic || !sourceBody.groupId || sourceBody.customType === 'blackhole' || sourceBody.entityType === 'blackhole') return;
+        // --- SAFETY CHECK: Never explode walls, undefined groups, BLACK HOLES, or WATER ---
+        // Added water check so liquid doesn't blow up
+        if (sourceBody.isStatic || !sourceBody.groupId || sourceBody.customType === 'blackhole' || sourceBody.entityType === 'blackhole' || sourceBody.customType === 'water') return;
 
         // --- Play Sound ---
         playExplosionSound();
