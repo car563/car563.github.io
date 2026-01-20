@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab: Pro Edition</title>
+    <!-- Matter.js Physics Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --text-color: #f8fafc;
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --border: rgba(56, 189, 248, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* Modern Glassmorphism UI */
+        #ui-left {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--panel-bg);
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            pointer-events: auto;
+            z-index: 10;
+            min-width: 220px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- HOME MENU STYLES --- */
+        #home-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease, visibility 0.3s;
+        }
+
+        #home-menu.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .title-large {
+            font-size: 3.5rem;
+            color: var(--accent);
+            font-weight: 900;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+            text-align: center;
+        }
+
+        .play-btn {
+            font-size: 1.8rem;
+            padding: 18px 60px;
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(56, 189, 248, 0.6);
+            background: #fff;
+        }
+
+        .menu-hint {
+            color: #94a3b8;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Hide game UI when menu is open */
+        body.menu-active #ui-left,
+        body.menu-active #spawn-menu,
+        body.gui-hidden #ui-left,
+        body.gui-hidden #spawn-menu {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #spawn-menu {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--panel-bg);
+            color: var(--text-color);
+            padding: 15px;
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            z-index: 10;
+            width: 160px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            
+            /* Animation */
+            max-height: 52px;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, box-shadow 0.3s;
+            opacity: 0.9;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #spawn-menu:hover {
+            max-height: 450px;
+            opacity: 1;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 1.1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+        }
+
+        #spawn-menu h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+        }
+
+        #spawn-menu h2::after {
+            content: '▼';
+            font-size: 0.8em;
+            transition: transform 0.4s;
+            color: rgba(255,255,255,0.5);
+        }
+
+        #spawn-menu:hover h2::after {
+            transform: rotate(180deg);
+            color: var(--accent);
+        }
+
+        .spawn-btn {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        .spawn-btn:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            transform: translateX(5px);
+            font-weight: 700;
+        }
+
+        .spawn-btn.clear {
+            margin-top: 8px;
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .spawn-btn.clear:hover {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        .key-hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .key-box {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: white;
+        }
+
+        /* Fancy Slider */
+        .control-group {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            appearance: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            border: 2px solid #0f172a;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body class="menu-active">
+
+<!-- HOME MENU OVERLAY -->
+<div id="home-menu">
+    <div class="title-large">Physics Lab</div>
+    <button class="play-btn" onclick="togglePause()">PLAY</button>
+    <div class="menu-hint">Press <b>ESC</b> to Pause / Resume</div>
+</div>
+
+<div id="ui-left">
+    <h1>Physics Lab</h1>
+    <p style="font-size: 0.85rem; color: #cbd5e1;">Advanced AI Enabled.</p>
+    <div class="key-hint"><span class="key-box">Click x5</span> or <b>Slam</b> to explode</div>
+    <div class="key-hint"><span class="key-box">E</span> Quick Spawn</div>
+    <div class="key-hint"><span class="key-box">M</span> Toggle UI</div>
+    
+    <div class="control-group">
+        <div class="slider-label">
+            <span>Gravity</span>
+            <span id="gravity-val">1.5</span>
+        </div>
+        <input type="range" id="gravity-slider" min="-2" max="5" step="0.1" value="1.5">
+    </div>
+</div>
+
+<div id="spawn-menu">
+    <h2>Spawn Menu</h2>
+    <!-- UPDATED: Buttons now call selectAndSpawn -->
+    <button class="spawn-btn" onclick="selectAndSpawn('block')">📦 Crate</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('heavy')">🪨 Heavy Metal</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('blackhole')">⚫ Black Hole</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('ball')">🎱 Sphere</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('car')">🏎️ Sport Car</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('person')">🏃 Ragdoll (AI)</button>
+    <button class="spawn-btn" onclick="selectAndSpawn('launcher')">🔫 Blaster</button>
+    <!-- NEW: Delete Tool Button -->
+    <button class="spawn-btn" onclick="selectAndSpawn('delete')" style="border-color: #ef4444; color: #ef4444;">❌ Delete Tool</button>
+    <button class="spawn-btn clear" onclick="clearAllShapes()">🗑️ Clear World (2)</button>
+</div>
+
+<script>
+    // --- Audio Context Setup ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function resumeAudio() {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+    document.addEventListener('mousedown', resumeAudio, { once: true });
+    document.addEventListener('keydown', resumeAudio, { once: true });
+
+    function playExplosionSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+
+        // 1. Noise Burst (The "Crunch")
+        const bufferSize = audioCtx.sampleRate * 0.5; // 0.5 seconds
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = audioCtx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(800, t);
+        noiseFilter.frequency.linearRampToValueAtTime(0, t + 0.4);
+        
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.4, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noise.start();
+
+        // 2. Low Oscillator (The "Boom")
+        const osc = audioCtx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, t);
+        osc.frequency.exponentialRampToValueAtTime(20, t + 0.4);
+
+        const oscGain = audioCtx.createGain();
+        oscGain.gain.setValueAtTime(0.6, t);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+
+        osc.connect(oscGain);
+        oscGain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(t + 0.5);
+    }
+    
+    function playShootSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+        
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(50, t + 0.1); // Shorter pew
+        
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(t + 0.1);
+    }
+
+    const { Engine, Render, Runner, Bodies, Composite, MouseConstraint, Mouse, Vector, Events, Body, Constraint } = Matter;
+
+    const engine = Engine.create();
+    const world = engine.world;
+    engine.gravity.y = 1.5;
+
+    // Use a high pixel ratio for sharpness
+    const render = Render.create({
+        element: document.body,
+        engine: engine,
+        options: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            wireframes: false, // We will draw custom textures over this
+            background: '#0f172a',
+            pixelRatio: window.devicePixelRatio || 1
+        }
+    });
+
+    Render.run(render);
+    const runner = Runner.create();
+    
+    // Don't run immediately, wait for Play button
+    // Runner.run(runner, engine); 
+
+    // --- GAME STATE MANAGEMENT ---
+    let isGameRunning = false;
+    const homeMenu = document.getElementById('home-menu');
+
+    function togglePause() {
+        isGameRunning = !isGameRunning;
+        
+        if (isGameRunning) {
+            // Resume
+            homeMenu.classList.add('hidden');
+            document.body.classList.remove('menu-active');
+            Runner.run(runner, engine);
+            
+            // Allow audio context to resume on user interaction
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } else {
+            // Pause
+            homeMenu.classList.remove('hidden');
+            document.body.classList.add('menu-active');
+            Runner.stop(runner);
+        }
+    }
+
+    // --- High Quality Walls ---
+    const wallOptions = { isStatic: true, render: { fillStyle: '#1e293b' }, friction: 0.8, restitution: 0.5 };
+    let ground, leftWall, rightWall, ceiling;
+
+    function createWalls() {
+        // Remove existing walls/corners
+        const bodies = Composite.allBodies(world);
+        const wallsToRemove = bodies.filter(b => b.isStatic && b.customType !== 'blackhole'); 
+        Composite.remove(world, wallsToRemove);
+
+        const thick = 100;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        
+        // Standard Walls
+        ground = Bodies.rectangle(w / 2, h + thick/2, w, thick, wallOptions);
+        leftWall = Bodies.rectangle(-thick/2, h / 2, thick, h, wallOptions);
+        rightWall = Bodies.rectangle(w + thick/2, h / 2, thick, h, wallOptions);
+        ceiling = Bodies.rectangle(w / 2, -thick/2, w, thick, wallOptions);
+        
+        // Corners removed
+
+        Composite.add(world, [ground, leftWall, rightWall, ceiling]);
+    }
+    createWalls();
+
+    const palette = ['#fbbf24', '#f87171', '#c084fc', '#4ade80', '#60a5fa', '#f472b6'];
+
+    // --- GLOBAL SPAWN SELECTION ---
+    let currentSpawnType = 'block';
+
+    function selectAndSpawn(type) {
+        currentSpawnType = type;
+        // Don't spawn anything immediately if we just selected the delete tool
+        if (type !== 'delete') {
+            spawnEntity(type);
+        }
+    }
+
+    function spawnEntity(type, x, y) {
+        // Fallback x and y
+        // Spread X more (random * 600) so they don't stack perfectly and topple
+        const posX = (x !== undefined) ? x : (window.innerWidth / 2 + (Math.random() * 600 - 300));
+        // Spawn on ground (height - 150px) instead of sky (100px)
+        const posY = (y !== undefined) ? y : (window.innerHeight - 150);
+        
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        const timestamp = Date.now();
+        const groupId = Math.random().toString(36).substr(2, 9); 
+
+        const commonProps = {
+            isTarget: true,
+            tapCount: 0,
+            createdAt: timestamp,
+            groupId: groupId,
+            entityType: type 
+        };
+
+        try {
+            if (type === 'block') {
+                const size = 50 + Math.random() * 40;
+                const b = Bodies.rectangle(posX, posY, size, size, { 
+                    render: { fillStyle: color }, 
+                    chamfer: { radius: 4 }, 
+                    restitution: 0.4,
+                    frictionAir: 0.01 
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'crate';
+                Composite.add(world, b);
+            } 
+            else if (type === 'heavy') {
+                const size = 60;
+                const b = Bodies.rectangle(posX, posY, size, size, { 
+                    render: { fillStyle: '#64748b' }, // Slate grey
+                    chamfer: { radius: 2 }, 
+                    restitution: 0.1, // Low bounce (heavy thud)
+                    density: 50, // EXTREMELY DENSE (1000x previous value)
+                    friction: 0.6,
+                    frictionAir: 0.005
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'heavyBlock';
+                Composite.add(world, b);
+            }
+            else if (type === 'blackhole') {
+                const b = Bodies.circle(posX, posY, 30, {
+                    render: { fillStyle: '#000000' },
+                    density: 100, // Extremely heavy so it doesn't get pushed around easily
+                    frictionAir: 0.1, // High drag to keep it stable
+                    restitution: 0,
+                    isStatic: false // It moves, but we will make it hover
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'blackhole';
+                Composite.add(world, b);
+            }
+            else if (type === 'ball') {
+                const r = 25 + Math.random() * 15;
+                const b = Bodies.circle(posX, posY, r, { 
+                    render: { fillStyle: color }, 
+                    restitution: 0.8,
+                    friction: 0.005,
+                    frictionAir: 0.005 
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'sphere';
+                Composite.add(world, b);
+            }
+            else if (type === 'car') {
+                const group = Body.nextGroup(true);
+                const chassis = Bodies.rectangle(posX, posY, 100, 20, { 
+                    collisionFilter: { group: group },
+                    render: { fillStyle: color },
+                    chamfer: { radius: 5 },
+                    density: 0.004
+                });
+                const cabin = Bodies.trapezoid(posX, posY - 25, 60, 30, 0.3, {
+                    collisionFilter: { group: group },
+                    render: { fillStyle: '#1e293b' },
+                    density: 0.001
+                });
+                const body = Body.create({ parts: [chassis, cabin] });
+                const wheel1 = Bodies.circle(posX - 30, posY + 15, 14, { 
+                    collisionFilter: { group: group },
+                    friction: 0.8,
+                    render: { fillStyle: '#333' },
+                    density: 0.002
+                });
+                const wheel2 = Bodies.circle(posX + 30, posY + 15, 14, { 
+                    collisionFilter: { group: group },
+                    friction: 0.8,
+                    render: { fillStyle: '#333' },
+                    density: 0.002
+                });
+                const axel1 = Constraint.create({ bodyA: body, pointB: { x: -30, y: 15 }, bodyB: wheel1, stiffness: 0.2, length: 0, render: { visible: false } });
+                const axel2 = Constraint.create({ bodyA: body, pointB: { x: 30, y: 15 }, bodyB: wheel2, stiffness: 0.2, length: 0, render: { visible: false } });
+                
+                [body, wheel1, wheel2].forEach(p => Object.assign(p, commonProps));
+                body.customType = 'carBody';
+                wheel1.customType = 'wheel'; wheel2.customType = 'wheel';
+                
+                Composite.add(world, [body, wheel1, wheel2, axel1, axel2]);
+            }
+            else if (type === 'person') {
+                const group = Body.nextGroup(true);
+                const startY = posY;
+                const head = Bodies.circle(posX, startY - 25, 12, { collisionFilter: { group: group }, render: { fillStyle: '#ffccaa' } });
+                const torso = Bodies.rectangle(posX, startY + 10, 24, 40, { collisionFilter: { group: group }, render: { fillStyle: color }, chamfer: { radius: 5 } });
+                const rightArm = Bodies.rectangle(posX + 18, startY + 5, 8, 30, { collisionFilter: { group: group }, render: { fillStyle: color }, chamfer: { radius: 3 } });
+                const leftArm = Bodies.rectangle(posX - 18, startY + 5, 8, 30, { collisionFilter: { group: group }, render: { fillStyle: color }, chamfer: { radius: 3 } });
+                const rightLeg = Bodies.rectangle(posX + 8, startY + 45, 10, 35, { collisionFilter: { group: group }, render: { fillStyle: '#334155' }, chamfer: { radius: 3 } });
+                const leftLeg = Bodies.rectangle(posX - 8, startY + 45, 10, 35, { collisionFilter: { group: group }, render: { fillStyle: '#334155' }, chamfer: { radius: 3 } });
+
+                const neck = Constraint.create({ bodyA: head, bodyB: torso, pointA: { x: 0, y: 12 }, pointB: { x: 0, y: -20 }, stiffness: 0.5, render: { visible: false } });
+                const armRA = Constraint.create({ bodyA: torso, bodyB: rightArm, pointA: { x: 12, y: -10 }, pointB: { x: 0, y: -12 }, stiffness: 0.5, render: { visible: false } });
+                const armLA = Constraint.create({ bodyA: torso, bodyB: leftArm, pointA: { x: -12, y: -10 }, pointB: { x: 0, y: -12 }, stiffness: 0.5, render: { visible: false } });
+                const legRA = Constraint.create({ bodyA: torso, bodyB: rightLeg, pointA: { x: 8, y: 20 }, pointB: { x: 0, y: -15 }, stiffness: 0.5, render: { visible: false } });
+                const legLA = Constraint.create({ bodyA: torso, bodyB: leftLeg, pointA: { x: -8, y: 20 }, pointB: { x: 0, y: -15 }, stiffness: 0.5, render: { visible: false } });
+
+                [head, torso, rightArm, leftArm, rightLeg, leftLeg].forEach(p => Object.assign(p, commonProps));
+                head.customType = 'face'; 
+                torso.customType = 'ragdoll';
+                
+                // --- ADVANCED AI INITIALIZATION ---
+                const personalities = ['social', 'explorer', 'timid'];
+                const pType = personalities[Math.floor(Math.random() * personalities.length)];
+                
+                torso.ai = {
+                    state: 'walk',
+                    personality: pType, // social, explorer, timid
+                    direction: Math.random() > 0.5 ? 1 : -1,
+                    nextActionTime: 0,
+                    isStuckCount: 0,
+                    socialCooldown: 0,
+                    talkDuration: 0,
+                    talkText: '',
+                    fearTarget: null, // Point to run away from
+                    targetBody: null // Object to chase (if explorer)
+                };
+                
+                head.relatedTorso = torso;
+                torso.relatedHead = head;
+                
+                // NEW: Store legs for walking animation
+                torso.legs = { right: rightLeg, left: leftLeg };
+
+                Composite.add(world, [head, torso, rightArm, leftArm, rightLeg, leftLeg, neck, armRA, armLA, legRA, legLA]);
+            }
+            else if (type === 'launcher') {
+                const gunBody = Bodies.rectangle(posX, posY, 60, 20, {
+                    render: { fillStyle: '#475569' },
+                    chamfer: { radius: 4 },
+                    density: 0.05 // Heavy
+                });
+                const handle = Bodies.rectangle(posX - 15, posY + 15, 15, 30, {
+                    render: { fillStyle: '#334155' },
+                    chamfer: { radius: 2 }
+                });
+                const body = Body.create({ parts: [gunBody, handle] });
+                
+                Object.assign(body, commonProps);
+                // Stabilize the gun
+                body.frictionAir = 0.05; 
+                body.customType = 'launcher';
+                // Launcher specific state
+                body.launcher = { lastShot: 0, cooldown: 150 }; // 150ms cooldown
+                
+                Composite.add(world, body);
+            }
+        } catch (e) {
+            console.error("Spawn error:", e);
+        }
+    }
+
+    // --- HELPER: Fire a single launcher ---
+    function fireLauncher(launcher) {
+        const now = Date.now();
+        // Check cooldown
+        if (now - launcher.launcher.lastShot < launcher.launcher.cooldown) return;
+        
+        launcher.launcher.lastShot = now;
+        playShootSound();
+        
+        // Calculate barrel position
+        const len = 35;
+        const angle = launcher.angle;
+        const barrelX = launcher.position.x + Math.cos(angle) * len;
+        const barrelY = launcher.position.y + Math.sin(angle) * len;
+        
+        // Create Projectile
+        const projectile = Bodies.circle(barrelX, barrelY, 6, {
+            density: 0.05,
+            restitution: 0.5,
+            render: { fillStyle: '#ef4444' }
+        });
+        
+        // Add HIGH velocity
+        const force = 0.4;
+        Body.applyForce(projectile, projectile.position, {
+            x: Math.cos(angle) * force,
+            y: Math.sin(angle) * force
+        });
+        
+        projectile.isTarget = true; 
+        projectile.tapCount = 5; 
+        // IMPORTANT: Assign unique group ID to prevent wall destruction
+        projectile.groupId = Math.random().toString(36).substr(2, 9);
+        projectile.entityType = 'projectile';
+        
+        Composite.add(world, projectile);
+        
+        // Recoil
+        Body.applyForce(launcher, launcher.position, {
+            x: -Math.cos(angle) * 0.05,
+            y: -Math.sin(angle) * 0.05
+        });
+    }
+
+    // --- INPUT TRACKING ---
+    const keys = {};
+    window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+    window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+    // --- AI SYSTEM LOOP ---
+    Events.on(engine, 'beforeUpdate', function(event) {
+        const bodies = Composite.allBodies(world);
+        const time = engine.timing.timestamp;
+        const ragdolls = bodies.filter(b => b.customType === 'ragdoll');
+        const interactables = bodies.filter(b => b.customType === 'crate' || b.customType === 'sphere' || b.customType === 'carBody');
+        const launchers = bodies.filter(b => b.customType === 'launcher');
+        const blackholes = bodies.filter(b => b.customType === 'blackhole');
+
+        // --- BLACK HOLE LOGIC ---
+        blackholes.forEach(bh => {
+            // 1. Anti-Gravity Hover (Apply force equal and opposite to gravity)
+            const gravity = engine.world.gravity;
+            Body.applyForce(bh, bh.position, {
+                x: 0,
+                y: -bh.mass * gravity.y * gravity.scale
+            });
+
+            // 2. Gravitational Pull
+            bodies.forEach(other => {
+                // RESTORED: Can suck each other
+                if (other === bh || other.isStatic || other.customType === 'launcher') return;
+                
+                const dVec = Vector.sub(bh.position, other.position);
+                const dist = Vector.magnitude(dVec);
+
+                // Pull range (800px)
+                if (dist < 800) {
+                    const dir = Vector.normalise(dVec);
+                    // Force strength
+                    const strength = 0.002 * other.mass * (1000 / (dist + 50)); 
+                    
+                    Body.applyForce(other, other.position, Vector.mult(dir, strength));
+
+                    // 3. Event Horizon (Crush objects)
+                    if (dist < bh.circleRadius + 15) {
+                        // If it's a target object, explode it
+                        if (other.isTarget && !other.isExploding) {
+                            // Grow the black hole when it eats something
+                            const growth = 1.05;
+                            Body.scale(bh, growth, growth);
+                            bh.circleRadius *= growth; // Update radius for future calculations
+                            
+                            triggerExplosion(other);
+                        }
+                    }
+                }
+            });
+        });
+
+        // --- LAUNCHER LOGIC (Hold F or 1) ---
+        if (keys['1']) {
+            // FIRE ALL
+            launchers.forEach(launcher => fireLauncher(launcher));
+        } 
+        else if (keys['f']) {
+            // FIRE SELECTED OR NEAREST
+            let targetLauncher = null;
+            
+            // Priority 1: Launcher held by mouse
+            if (mouseConstraint.body && mouseConstraint.body.customType === 'launcher') {
+                targetLauncher = mouseConstraint.body;
+            } 
+            // Priority 2: Closest launcher to mouse cursor
+            else if (launchers.length > 0) {
+                let minDist = Infinity;
+                launchers.forEach(l => {
+                    const dist = Vector.magnitude(Vector.sub(mouse.position, l.position));
+                    if (dist < minDist) {
+                        minDist = dist;
+                        targetLauncher = l;
+                    }
+                });
+            }
+            
+            if (targetLauncher) {
+                fireLauncher(targetLauncher);
+            }
+        }
+
+        ragdolls.forEach(body => {
+            if (!body.ai) return;
+            const ai = body.ai;
+
+            // 1. FEAR CHECK (Grabbed OR Explosion Panic)
+            const isGrabbed = mouseConstraint.body && mouseConstraint.body.groupId === body.groupId;
+            
+            // Panic Logic: Run away from fearTarget
+            if (ai.state === 'panic') {
+                ai.talkText = "AHHH!"; // Scream
+                
+                if (ai.fearTarget) {
+                    const dx = body.position.x - ai.fearTarget.x;
+                    ai.direction = dx > 0 ? 1 : -1; // Run away from center of blast
+                }
+                
+                // Recovery time
+                if (time > ai.nextActionTime) {
+                    ai.state = 'walk';
+                    ai.talkText = ""; // Stop screaming
+                }
+            }
+            else if (isGrabbed) {
+                ai.state = 'scared';
+                // Timid characters panic more
+                if (Math.random() < (ai.personality === 'timid' ? 0.6 : 0.1)) {
+                     Body.applyForce(body, body.position, { x: (Math.random()-0.5)*0.02, y: (Math.random()-0.5)*0.02 });
+                }
+            } 
+            else if (ai.state === 'scared') {
+                ai.state = 'walk'; // Recover immediately if released
+            }
+
+            // 2. TIMID PERCEPTION (Scared of fast objects)
+            if (ai.personality === 'timid' && ai.state === 'walk') {
+                for (let obj of interactables) {
+                    const dist = Vector.magnitude(Vector.sub(body.position, obj.position));
+                    if (dist < 150 && obj.speed > 8) { // If big object is fast and close
+                        ai.state = 'panic';
+                        ai.nextActionTime = time + 2000; // Panic for 2 seconds
+                        ai.fearTarget = obj.position; // Run away from object
+                        ai.talkText = "Too fast!";
+                    }
+                }
+            }
+
+            // 3. EXPLORER PERCEPTION (Find interesting objects)
+            if (ai.personality === 'explorer' && ai.state === 'walk' && !ai.targetBody && time > ai.nextActionTime) {
+                // Find closest interactable
+                let closest = null;
+                let minDist = 600; // Range
+                for (let obj of interactables) {
+                    const dist = Vector.magnitude(Vector.sub(body.position, obj.position));
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closest = obj;
+                    }
+                }
+                if (closest) {
+                    ai.targetBody = closest;
+                    ai.nextActionTime = time + 5000; // Interest duration
+                }
+            }
+            
+            // Explorer Tracking Logic
+            if (ai.targetBody && ai.state === 'walk') {
+                if (Composite.allBodies(world).includes(ai.targetBody)) {
+                    const dx = ai.targetBody.position.x - body.position.x;
+                    ai.direction = dx > 0 ? 1 : -1;
+                    
+                    // Stop chasing if reached or bored
+                    if (Math.abs(dx) < 40 || time > ai.nextActionTime) {
+                        ai.targetBody = null;
+                        ai.talkText = "Hmm...";
+                        setTimeout(() => ai.talkText = "", 1000);
+                    }
+                } else {
+                    ai.targetBody = null; // Object destroyed
+                }
+            }
+
+            // 4. SELF-RIGHTING & WALKING ANIMATION (Updated)
+            
+            // Keep Torso Upright (Stronger balance)
+            const angleSpeed = body.angularVelocity;
+            const targetAngle = 0;
+            // P-Controller for balance: kP * error - kD * velocity
+            const torque = 0.5 * (targetAngle - body.angle) - 2 * angleSpeed;
+            body.torque += torque * body.mass;
+
+            // Keep Head Upright
+            if (body.relatedHead) {
+                const hAngle = body.relatedHead.angle;
+                const hSpeed = body.relatedHead.angularVelocity;
+                const hTorque = 0.1 * (0 - hAngle) - 0.5 * hSpeed;
+                body.relatedHead.torque += hTorque * body.relatedHead.mass;
+            }
+
+            // Leg Animation
+            if ((ai.state === 'walk' || ai.state === 'panic') && body.legs) {
+                const walkSpeed = ai.state === 'panic' ? 0.015 : 0.008;
+                const stride = 0.8; // Leg swing range
+                
+                const targetRight = Math.sin(time * walkSpeed) * stride;
+                const targetLeft = Math.sin(time * walkSpeed + Math.PI) * stride;
+                
+                const kLeg = 0.15; // Leg stiffness
+                
+                // Animate Right Leg
+                const rAngle = body.legs.right.angle - body.angle;
+                const rTorque = kLeg * (targetRight - rAngle);
+                body.legs.right.torque += rTorque * body.legs.right.mass;
+                
+                // Animate Left Leg
+                const lAngle = body.legs.left.angle - body.angle;
+                const lTorque = kLeg * (targetLeft - lAngle);
+                body.legs.left.torque += lTorque * body.legs.left.mass;
+            }
+
+            // 5. SOCIALIZING (Social Personality Only)
+            if (ai.personality === 'social' && ai.state === 'walk' && ai.socialCooldown <= 0) {
+                for (let other of ragdolls) {
+                    if (other === body || other.ai.state !== 'walk') continue;
+                    const dist = Vector.magnitude(Vector.sub(body.position, other.position));
+                    if (dist < 80) {
+                        // Intelligent Conversation
+                        const greetings = ["Hi friend!", "Greetings!", "Hello!", "Hey there!"];
+                        const replies = ["Good day!", "Hi!", "Yo!", "Physics rules!"];
+                        
+                        ai.state = 'talk';
+                        ai.talkDuration = 150;
+                        ai.talkText = greetings[Math.floor(Math.random() * greetings.length)];
+                        ai.socialCooldown = 800;
+
+                        other.ai.state = 'talk';
+                        other.ai.talkDuration = 150;
+                        other.ai.talkText = replies[Math.floor(Math.random() * replies.length)];
+                        other.ai.socialCooldown = 800;
+                        break;
+                    }
+                }
+            }
+
+            if (ai.state === 'talk') {
+                ai.talkDuration--;
+                if (ai.talkDuration <= 0) {
+                    ai.state = 'walk';
+                    ai.direction *= -1; // Part ways
+                }
+                return; // Stop moving to talk
+            }
+
+            if (ai.socialCooldown > 0) ai.socialCooldown--;
+
+            // 6. MOVEMENT
+            if (ai.state === 'walk' || ai.state === 'panic') {
+                // If simple wandering
+                if (ai.state === 'walk' && !ai.targetBody && time > ai.nextActionTime) {
+                    if (Math.random() < 0.3) ai.direction *= -1;
+                    ai.nextActionTime = time + 2000 + Math.random() * 2000;
+                }
+
+                // Panic Speed vs Walk Speed
+                const speed = ai.state === 'panic' ? 0.005 : 0.0025;
+                Body.applyForce(body, body.position, { x: speed * ai.direction * body.mass, y: 0 });
+
+                // 7. ADVANCED UNSTICKING / PARKOUR
+                if (Math.abs(body.velocity.x) < 0.3) {
+                    ai.isStuckCount++;
+                    if (ai.isStuckCount > 30) {
+                        // Jump over obstacle
+                        Body.applyForce(body, body.position, { x: 0, y: -0.02 * body.mass });
+                        if (ai.isStuckCount > 80) {
+                            // If still stuck, turn around
+                            ai.direction *= -1;
+                            ai.isStuckCount = 0;
+                            // Abandon target if stuck
+                            if (ai.targetBody) ai.targetBody = null; 
+                        }
+                    }
+                } else {
+                    ai.isStuckCount = 0;
+                }
+            }
+        });
+    });
+
+    // --- Debris System ---
+    function createDebris(x, y, color, count = 8) {
+        const particles = [];
+        for (let i = 0; i < count; i++) {
+            const size = 6 + Math.random() * 8;
+            const particle = Bodies.polygon(x, y, 3 + Math.floor(Math.random() * 2), size, {
+                render: { fillStyle: color },
+                friction: 0.5,
+                restitution: 0.5,
+                frictionAir: 0.05
+            });
+            const force = {
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02 - 0.02
+            };
+            Body.applyForce(particle, particle.position, force);
+            particles.push(particle);
+        }
+        Composite.add(world, particles);
+        setTimeout(() => Composite.remove(world, particles), 1500);
+    }
+
+    // --- Custom Texture Renderer ---
+    Events.on(render, 'afterRender', function() {
+        const ctx = render.context;
+        const bodies = Composite.allBodies(world);
+        const time = engine.timing.timestamp;
+        
+        for (let i = 0; i < bodies.length; i += 1) {
+            const body = bodies[i];
+            const x = body.position.x;
+            const y = body.position.y;
+            const angle = body.angle;
+
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            // Crate
+            if (body.customType === 'crate') {
+                const w = body.bounds.max.x - body.bounds.min.x;
+                const h = body.bounds.max.y - body.bounds.min.y;
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-w/2 + 4, -h/2 + 4, w - 8, h - 8);
+                ctx.beginPath();
+                ctx.moveTo(-w/2 + 4, -h/2 + 4); ctx.lineTo(w/2 - 4, h/2 - 4);
+                ctx.moveTo(w/2 - 4, -h/2 + 4); ctx.lineTo(-w/2 + 4, h/2 - 4);
+                ctx.stroke();
+            }
+            // Heavy Metal Block
+            if (body.customType === 'heavyBlock') {
+                const w = body.bounds.max.x - body.bounds.min.x;
+                const h = body.bounds.max.y - body.bounds.min.y;
+                
+                // Metallic Sheen (Diagonal reflection)
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.beginPath();
+                ctx.moveTo(-w/2, -h/2 + 20);
+                ctx.lineTo(-w/2 + 20, -h/2);
+                ctx.lineTo(w/2, h/2 - 20);
+                ctx.lineTo(w/2 - 20, h/2);
+                ctx.fill();
+
+                // Rivets in corners
+                ctx.fillStyle = '#334155';
+                const inset = 8;
+                const rivetSize = 3;
+                const positions = [
+                    {x: -w/2 + inset, y: -h/2 + inset},
+                    {x: w/2 - inset, y: -h/2 + inset},
+                    {x: w/2 - inset, y: h/2 - inset},
+                    {x: -w/2 + inset, y: h/2 - inset}
+                ];
+                
+                positions.forEach(pos => {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, rivetSize, 0, 2 * Math.PI);
+                    ctx.fill();
+                    // Highlight on rivet
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+                
+                // Heavy Border
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-w/2, -h/2, w, h);
+            }
+            // Black Hole Visuals
+            if (body.customType === 'blackhole') {
+                const r = body.circleRadius;
+                
+                // Pulsing Accretion Disk
+                const pulse = Math.sin(time * 0.005) * 0.1 + 1;
+                const pulse2 = Math.cos(time * 0.008) * 0.1 + 1;
+
+                // Outer Glow (Purple)
+                const gradient = ctx.createRadialGradient(0, 0, r, 0, 0, r * 3 * pulse);
+                gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)'); // Violet
+                gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 3 * pulse, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Inner Ring (White/Blue)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, r + (5 * pulse2), 0, 2 * Math.PI);
+                ctx.stroke();
+
+                // The Void (Black)
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            // Sphere
+            if (body.customType === 'sphere') {
+                const r = body.circleRadius;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.arc(-r * 0.3, -r * 0.3, r * 0.25, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            // Wheel
+            if (body.customType === 'wheel') {
+                const r = body.circleRadius;
+                ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, r - 2, 0, 2 * Math.PI); ctx.stroke();
+                ctx.fillStyle = '#777'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 2 * Math.PI); ctx.fill();
+                ctx.strokeStyle = '#555'; ctx.beginPath();
+                ctx.moveTo(0, -r+2); ctx.lineTo(0, r-2);
+                ctx.moveTo(-r+2, 0); ctx.lineTo(r-2, 0);
+                ctx.stroke();
+            }
+            // Car Body
+            if (body.customType === 'carBody') {
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-10, 10); ctx.stroke();
+                ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.rect(40, -5, 5, 10); ctx.fill();
+                ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.rect(-48, -5, 5, 10); ctx.fill();
+            }
+            // Launcher
+            if (body.customType === 'launcher') {
+                // Barrel stripes
+                ctx.fillStyle = '#ef4444'; 
+                ctx.beginPath(); 
+                ctx.rect(10, -10, 5, 20); 
+                ctx.fill();
+                // Sight
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.rect(25, -12, 4, 4);
+                ctx.fill();
+            }
+            // Face
+            if (body.customType === 'face') {
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                
+                let state = 'walk';
+                // SAFE GUARD: Check AI existence before accessing
+                if (body.relatedTorso && body.relatedTorso.ai) {
+                    state = body.relatedTorso.ai.state;
+                }
+
+                // Eyes
+                ctx.beginPath();
+                if (state === 'scared' || state === 'panic') {
+                    ctx.fillStyle = 'white';
+                    ctx.arc(-4, -2, 2.5, 0, 2 * Math.PI); ctx.arc(4, -2, 2.5, 0, 2 * Math.PI); ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(-4, -2, 1, 0, 2 * Math.PI); ctx.arc(4, -2, 1, 0, 2 * Math.PI); ctx.fill();
+                } else {
+                    ctx.arc(-4, -2, 1.5, 0, 2 * Math.PI); ctx.arc(4, -2, 1.5, 0, 2 * Math.PI); ctx.fill();
+                }
+
+                // Mouth
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+                ctx.lineWidth = 1;
+                if (state === 'scared' || state === 'panic') {
+                    ctx.ellipse(0, 3, 2, 3, 0, 0, 2 * Math.PI); // 'O' mouth
+                    ctx.stroke();
+                } else if (state === 'talk') {
+                    ctx.moveTo(-2, 3); ctx.lineTo(2, 3);
+                    ctx.stroke();
+                } else {
+                    ctx.arc(0, 2, 5, 0.2, Math.PI - 0.2); // Smile
+                    ctx.stroke();
+                }
+            }
+
+            // Damage Overlay
+            if (body.isTarget && body.tapCount > 0) {
+                const health = body.tapCount;
+                ctx.globalAlpha = health * 0.2;
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0,0); ctx.lineTo(10, 10); ctx.lineTo(15, -5); ctx.lineTo(-10, -10);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.rotate(-angle);
+            ctx.translate(-x, -y);
+
+            // --- Draw Speech Bubbles (Fixed Safety Check & Dynamic Sizing) ---
+            if (body.customType === 'face' && body.relatedTorso && body.relatedTorso.ai) {
+                // Show text if 'talk' OR 'panic'
+                const ai = body.relatedTorso.ai;
+                if (ai.state === 'talk' || ai.state === 'panic') {
+                    const text = ai.talkText || "";
+                    if (text !== "") {
+                        ctx.save();
+                        ctx.translate(body.position.x, body.position.y - 35);
+                        
+                        ctx.font = '14px "Segoe UI", sans-serif';
+                        const textMetrics = ctx.measureText(text);
+                        const textWidth = textMetrics.width;
+                        const boxPadding = 8;
+                        const boxWidth = textWidth + (boxPadding * 2);
+                        const boxHeight = 26;
+
+                        ctx.fillStyle = 'white';
+                        ctx.strokeStyle = '#ccc';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.roundRect(-boxWidth/2, -boxHeight/2 - 5, boxWidth, boxHeight, 5);
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, boxHeight/2 - 5);
+                        ctx.lineTo(-4, boxHeight/2 + 2);
+                        ctx.lineTo(4, boxHeight/2 - 5);
+                        ctx.fill();
+
+                        ctx.fillStyle = 'black';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(text, 0, -5);
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+    });
+
+    Events.on(render, 'beforeRender', function() {
+        const ctx = render.context;
+        const width = render.canvas.width;
+        const height = render.canvas.height;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        const gridSize = 50;
+        ctx.beginPath();
+        for (let x = 0; x < width; x += gridSize) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
+        for (let y = 0; y < height; y += gridSize) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
+        ctx.stroke();
+    });
+
+    const mouse = Mouse.create(render.canvas);
+    mouse.pixelRatio = window.devicePixelRatio || 1;
+    const mouseConstraint = MouseConstraint.create(engine, {
+        mouse: mouse,
+        constraint: { 
+            stiffness: 0.5,
+            render: { visible: false } 
+        }
+    });
+    Composite.add(world, mouseConstraint);
+    render.mouse = mouse;
+
+    let dragDistance = 0;
+    
+    // UPDATED: Mousedown handler for Delete Tool
+    Events.on(mouseConstraint, 'mousedown', () => { 
+        dragDistance = 0; 
+        
+        // DELETE TOOL LOGIC
+        if (currentSpawnType === 'delete') {
+            const body = mouseConstraint.body;
+            // Delete if it's a valid body and not a wall (isStatic)
+            if (body && !body.isStatic) {
+                // Remove the body
+                Composite.remove(world, body);
+                
+                // Visual Effect (Poof)
+                createDebris(body.position.x, body.position.y, body.render.fillStyle || '#fff', 5);
+                
+                // Release from mouse constraint so it doesn't try to drag a ghost
+                mouseConstraint.body = null;
+            }
+        }
+    });
+    
+    Events.on(mouseConstraint, 'mousemove', () => { if (mouseConstraint.body) dragDistance++; });
+    Events.on(mouseConstraint, 'mouseup', () => {
+        const body = mouseConstraint.body;
+        // Only tap/explode if NOT in delete mode
+        if (currentSpawnType !== 'delete' && body && body.isTarget && dragDistance < 12) {
+            handleTap(body);
+        }
+    });
+
+    // --- Hard Collision Detection ---
+    Events.on(engine, 'collisionStart', (event) => {
+        const pairs = event.pairs;
+        const now = Date.now();
+        const IMPACT_THRESHOLD = 24; 
+        
+        for (let i = 0; i < pairs.length; i++) {
+            const pair = pairs[i];
+            const bodyA = pair.bodyA;
+            const bodyB = pair.bodyB;
+
+            // --- PROJECTILE LOGIC ---
+            // Check if one of the bodies is a projectile from the blaster
+            if (bodyA.entityType === 'projectile' || bodyB.entityType === 'projectile') {
+                const projectile = bodyA.entityType === 'projectile' ? bodyA : bodyB;
+                const target = bodyA === projectile ? bodyB : bodyA;
+
+                // SPECIAL CASE: Black Hole eats projectiles silently (and grows)
+                if (target.customType === 'blackhole') {
+                    // Grow slightly from bullets
+                    const growth = 1.01;
+                    Body.scale(target, growth, growth);
+                    target.circleRadius *= growth;
+
+                    Composite.remove(world, projectile);
+                    continue;
+                }
+
+                // If the target is a valid destructible object (not a wall and not a black hole)
+                if (target.isTarget && !target.isStatic && !target.isExploding && target.customType !== 'blackhole') {
+                    // Trigger explosion on the target
+                    triggerExplosion(target);
+                    
+                    // Destroy the projectile itself (and make a little debris pop)
+                    Composite.remove(world, projectile);
+                    createDebris(projectile.position.x, projectile.position.y, '#ef4444', 3);
+                    
+                    continue; // Skip standard collision check for this pair
+                }
+            }
+
+            const relativeMotion = Vector.sub(bodyA.velocity, bodyB.velocity);
+            const speed = Vector.magnitude(relativeMotion);
+
+            if (speed > IMPACT_THRESHOLD) {
+                if (bodyA.isTarget && !bodyA.isExploding && now - (bodyA.createdAt || 0) > 1000) {
+                    triggerExplosion(bodyA);
+                }
+                if (bodyB.isTarget && !bodyB.isExploding && now - (bodyB.createdAt || 0) > 1000) {
+                    triggerExplosion(bodyB);
+                }
+            }
+        }
+    });
+
+    window.addEventListener('keydown', (e) => {
+        // Toggle Menu on ESC
+        if (e.key === 'Escape') {
+            togglePause();
+            return;
+        }
+
+        // Toggle GUI on M
+        if (e.key.toLowerCase() === 'm') {
+            document.body.classList.toggle('gui-hidden');
+        }
+
+        // Only allow game controls if game is running
+        if (!isGameRunning) return;
+
+        // SPAWN OR DELETE SELECTED ITEM
+        if (e.key.toLowerCase() === 'e') {
+            if (currentSpawnType === 'delete') {
+                // Query physics world for body under mouse
+                const bodies = Composite.allBodies(world);
+                const found = Matter.Query.point(bodies, mouse.position);
+                if (found.length > 0) {
+                    const body = found[0];
+                    if (!body.isStatic) {
+                        Composite.remove(world, body);
+                        createDebris(body.position.x, body.position.y, body.render.fillStyle || '#fff', 5);
+                    }
+                }
+            } else {
+                spawnEntity(currentSpawnType, mouse.position.x, mouse.position.y);
+            }
+        }
+        
+        if (e.key === '2') clearAllShapes();
+        
+        // --- LAUNCHER FIRING ---
+        if (e.key.toLowerCase() === 'f') {
+            const bodies = Composite.allBodies(world);
+            const launcher = bodies.find(b => b.customType === 'launcher');
+            
+            if (launcher) {
+                // Fire!
+                playShootSound();
+                
+                // Calculate barrel position
+                const len = 35;
+                const angle = launcher.angle;
+                const barrelX = launcher.position.x + Math.cos(angle) * len;
+                const barrelY = launcher.position.y + Math.sin(angle) * len;
+                
+                // Create Projectile
+                const projectile = Bodies.circle(barrelX, barrelY, 6, {
+                    density: 0.05,
+                    restitution: 0.5,
+                    render: { fillStyle: '#ef4444' }
+                });
+                
+                // Add velocity
+                const force = 0.05;
+                Body.applyForce(projectile, projectile.position, {
+                    x: Math.cos(angle) * force,
+                    y: Math.sin(angle) * force
+                });
+                
+                projectile.isTarget = true; 
+                projectile.tapCount = 5; 
+                // IMPORTANT: Assign unique group ID to prevent wall destruction
+                projectile.groupId = Math.random().toString(36).substr(2, 9);
+                projectile.entityType = 'projectile';
+                
+                Composite.add(world, projectile);
+                
+                // Recoil
+                Body.applyForce(launcher, launcher.position, {
+                    x: -Math.cos(angle) * 0.05,
+                    y: -Math.sin(angle) * 0.05
+                });
+            }
+        }
+    });
+
+    const gravitySlider = document.getElementById('gravity-slider');
+    const gravityVal = document.getElementById('gravity-val');
+    gravitySlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        engine.gravity.y = val;
+        gravityVal.innerText = val.toFixed(1);
+    });
+
+    function clearAllShapes() {
+        const bodies = Composite.allBodies(world);
+        const toRemove = bodies.filter(b => !b.isStatic);
+        Composite.remove(world, toRemove);
+        const constraints = Composite.allConstraints(world);
+        const nonMouseConstraints = constraints.filter(c => c !== mouseConstraint.constraint);
+        Composite.remove(world, nonMouseConstraints);
+    }
+
+    function handleTap(body) {
+        body.tapCount++;
+        Body.scale(body, 0.95, 0.95);
+        setTimeout(() => Body.scale(body, 1.0526, 1.0526), 50);
+        if (body.tapCount >= 5) triggerExplosion(body);
+    }
+
+    const respawnQueue = new Set();
+
+    function triggerExplosion(sourceBody) {
+        if (sourceBody.isExploding) return;
+        
+        // --- SAFETY CHECK: Never explode walls, undefined groups, or BLACK HOLES ---
+        // Added entityType check as a backup
+        if (sourceBody.isStatic || !sourceBody.groupId || sourceBody.customType === 'blackhole' || sourceBody.entityType === 'blackhole') return;
+
+        // --- Play Sound ---
+        playExplosionSound();
+
+        const groupId = sourceBody.groupId;
+        const allBodies = Composite.allBodies(world);
+        // Ensure we only grab dynamic bodies with the matching group ID
+        const groupBodies = allBodies.filter(b => b.groupId === groupId && !b.isStatic);
+        
+        groupBodies.forEach(b => b.isExploding = true);
+
+        const pos = { x: sourceBody.position.x, y: sourceBody.position.y };
+        const color = sourceBody.render.fillStyle;
+        const spawnType = sourceBody.entityType; 
+
+        render.options.background = '#e2e8f0';
+        setTimeout(() => render.options.background = '#0f172a', 60);
+
+        // --- PANIC NEARBY AI ---
+        const ragdolls = allBodies.filter(b => b.customType === 'ragdoll');
+        ragdolls.forEach(ragdoll => {
+            if (ragdoll.ai && !ragdoll.isExploding) {
+                const dist = Vector.magnitude(Vector.sub(ragdoll.position, pos));
+                if (dist < 400) {
+                    ragdoll.ai.state = 'panic';
+                    ragdoll.ai.fearTarget = pos;
+                    ragdoll.ai.nextActionTime = Date.now() + 2500; // Panic for 2.5s
+                }
+            }
+        });
+
+        Composite.allBodies(world).forEach(body => {
+            if (body.isStatic || body.groupId === groupId) return; 
+            const distVec = Vector.sub(body.position, pos);
+            const dist = Vector.magnitude(distVec);
+            if (dist < 600) {
+                const force = Vector.mult(Vector.normalise(distVec), 0.3 * Math.pow((600 - dist) / 600, 2) * body.mass);
+                Body.applyForce(body, body.position, force);
+                Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.5);
+            }
+        });
+
+        createDebris(pos.x, pos.y, color);
+
+        Composite.remove(world, groupBodies);
+        
+        const constraints = Composite.allConstraints(world);
+        const groupConstraints = constraints.filter(c => 
+            c !== mouseConstraint.constraint && 
+            ((c.bodyA && c.bodyA.groupId === groupId) || 
+            (c.bodyB && c.bodyB.groupId === groupId))
+        );
+        Composite.remove(world, groupConstraints);
+        
+        if (mouseConstraint.body && mouseConstraint.body.groupId === groupId) {
+            mouseConstraint.constraint.bodyB = null;
+            mouseConstraint.body = null;
+        }
+
+        // Only respawn if it's a known spawn type (projectiles don't respawn)
+        if (spawnType && spawnType !== 'projectile' && !respawnQueue.has(groupId)) {
+            respawnQueue.add(groupId);
+            setTimeout(() => {
+                const respawnX = Math.max(50, Math.min(window.innerWidth - 50, pos.x));
+                // Respawn on the ground instead of the air
+                spawnEntity(spawnType, respawnX, window.innerHeight - 150);
+                respawnQueue.delete(groupId); 
+            }, 1000);
+        }
+    }
+
+    // --- Initial Population (Restored) ---
+    for (let i = 0; i < 4; i++) {
+        spawnEntity('block');
+        spawnEntity('person');
+    }
+
+    window.addEventListener('resize', () => {
+        render.canvas.width = window.innerWidth; render.canvas.height = window.innerHeight;
+        render.options.width = window.innerWidth; render.options.height = window.innerHeight;
+        Mouse.setElement(mouse, render.canvas);
+        mouse.pixelRatio = window.devicePixelRatio || 1;
+        createWalls();
+    });
+
+    window.spawnEntity = spawnEntity;
+    window.selectAndSpawn = selectAndSpawn;
+    window.clearAllShapes = clearAllShapes;
+
+</script>
+</body>
+</html>
