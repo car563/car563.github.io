@@ -291,7 +291,8 @@
     <div class="key-hint"><span class="key-box">Click x5</span> or <b>Slam</b> to explode</div>
     <div class="key-hint"><span class="key-box">E</span> Quick Spawn</div>
     <div class="key-hint"><span class="key-box">M</span> Toggle UI</div>
-    <div class="key-hint"><span class="key-box">T</span> Slow Motion</div> <!-- NEW HINT -->
+    <div class="key-hint"><span class="key-box">T</span> Slow Motion</div>
+    <div class="key-hint"><span class="key-box">← →</span> Drive Cars</div>
     
     <div class="control-group">
         <div class="slider-label">
@@ -307,7 +308,8 @@
             <span>Spawn Size</span>
             <span id="size-val">1.0x</span>
         </div>
-        <input type="range" id="size-slider" min="0.5" max="3" step="0.1" value="1.0">
+        <!-- UPDATED: min to 0.1, max to 5 -->
+        <input type="range" id="size-slider" min="0.1" max="5" step="0.1" value="1.0">
     </div>
 </div>
 
@@ -573,33 +575,60 @@
                     collisionFilter: { group: group },
                     render: { fillStyle: color },
                     chamfer: { radius: 5 * s },
-                    density: 0.004
+                    density: 0.02 // Reverted to previous density
                 });
                 const cabin = Bodies.trapezoid(posX, posY - 25 * s, 60 * s, 30 * s, 0.3, {
                     collisionFilter: { group: group },
                     render: { fillStyle: '#1e293b' },
-                    density: 0.001
+                    density: 0.005 // Reverted to previous density
                 });
                 const body = Body.create({ parts: [chassis, cabin] });
-                const wheel1 = Bodies.circle(posX - 30 * s, posY + 15 * s, 14 * s, { 
+                
+                // Bigger wheels for better handling
+                const wheelSize = 16 * s;
+                // WHEELS: Reverted settings
+                const wheelOptions = { 
                     collisionFilter: { group: group },
-                    friction: 0.8,
+                    friction: 1.0,   
+                    restitution: 0,  
                     render: { fillStyle: '#333' },
-                    density: 0.002
+                    density: 0.05    // Reverted to heavy wheels
+                };
+                
+                const wheel1 = Bodies.circle(posX - 35 * s, posY + 15 * s, wheelSize, wheelOptions);
+                const wheel2 = Bodies.circle(posX + 35 * s, posY + 15 * s, wheelSize, wheelOptions);
+                
+                // SUSPENSION TUNING: Reverted to previous springs
+                const axel1 = Constraint.create({ 
+                    bodyA: body, 
+                    pointA: { x: -35 * s, y: 15 * s }, 
+                    bodyB: wheel1, 
+                    pointB: { x: 0, y: 0 }, 
+                    stiffness: 0.2, // Reverted stiffness
+                    damping: 0.1,   // Reverted damping
+                    length: 0, 
+                    render: { visible: false } 
                 });
-                const wheel2 = Bodies.circle(posX + 30 * s, posY + 15 * s, 14 * s, { 
-                    collisionFilter: { group: group },
-                    friction: 0.8,
-                    render: { fillStyle: '#333' },
-                    density: 0.002
+                
+                const axel2 = Constraint.create({ 
+                    bodyA: body, 
+                    pointA: { x: 35 * s, y: 15 * s }, 
+                    bodyB: wheel2, 
+                    pointB: { x: 0, y: 0 }, 
+                    stiffness: 0.2, // Reverted stiffness
+                    damping: 0.1,   // Reverted damping
+                    length: 0, 
+                    render: { visible: false } 
                 });
-                const axel1 = Constraint.create({ bodyA: body, pointB: { x: -30 * s, y: 15 * s }, bodyB: wheel1, stiffness: 0.2, length: 0, render: { visible: false } });
-                const axel2 = Constraint.create({ bodyA: body, pointB: { x: 30 * s, y: 15 * s }, bodyB: wheel2, stiffness: 0.2, length: 0, render: { visible: false } });
                 
                 [body, wheel1, wheel2].forEach(p => Object.assign(p, commonProps));
                 body.customType = 'carBody';
                 wheel1.customType = 'wheel'; wheel2.customType = 'wheel';
                 
+                // NEW: Store wheels and driver info on the main body for AI access
+                body.wheels = [wheel1, wheel2];
+                body.driver = null;
+
                 Composite.add(world, [body, wheel1, wheel2, axel1, axel2]);
             }
             else if (type === 'person') {
@@ -637,14 +666,18 @@
                     talkDuration: 0,
                     talkText: '',
                     fearTarget: null, // Point to run away from
-                    targetBody: null // Object to chase (if explorer)
+                    targetBody: null, // Object to chase (if explorer)
+                    vehicle: null, // NEW: Car being driven
+                    seatbelt: null // NEW: Constraint to hold them in
                 };
                 
                 head.relatedTorso = torso;
                 torso.relatedHead = head;
                 
-                // NEW: Store legs for walking animation
+                // Store legs for walking animation
                 torso.legs = { right: rightLeg, left: leftLeg };
+                // Store all parts for collision updates
+                torso.allParts = [head, torso, rightArm, leftArm, rightLeg, leftLeg];
 
                 Composite.add(world, [head, torso, rightArm, leftArm, rightLeg, leftLeg, neck, armRA, armLA, legRA, legLA]);
             }
@@ -738,6 +771,24 @@
         const launchers = bodies.filter(b => b.customType === 'launcher');
         const blackholes = bodies.filter(b => b.customType === 'blackhole');
 
+        // --- CAR DRIVING LOGIC ---
+        // Arrow Keys or WASD to drive
+        if (keys['arrowright'] || keys['d']) {
+            bodies.forEach(b => {
+                if (b.customType === 'wheel') {
+                    // Apply torque proportional to mass
+                    b.torque += 0.3 * b.mass; 
+                }
+            });
+        }
+        if (keys['arrowleft'] || keys['a']) {
+            bodies.forEach(b => {
+                if (b.customType === 'wheel') {
+                    b.torque -= 0.3 * b.mass;
+                }
+            });
+        }
+
         // --- BLACK HOLE LOGIC ---
         blackholes.forEach(bh => {
             // 1. Anti-Gravity Hover (Apply force equal and opposite to gravity)
@@ -818,7 +869,10 @@
             
             // Panic Logic: Run away from fearTarget
             if (ai.state === 'panic') {
-                ai.talkText = "AHHH!"; // Scream
+                if (ai.talkText === "" || ai.talkText === "Hmm..." || ai.talkText.includes("Hi")) {
+                     const panicLines = ["AHHH!", "RUN!", "HELP!", "WOAH!", "NOOO!", "IT'S OVER!", "YIKES!"];
+                     ai.talkText = panicLines[Math.floor(Math.random() * panicLines.length)];
+                }
                 
                 if (ai.fearTarget) {
                     const dx = body.position.x - ai.fearTarget.x;
@@ -850,7 +904,8 @@
                         ai.state = 'panic';
                         ai.nextActionTime = time + 2000; // Panic for 2 seconds
                         ai.fearTarget = obj.position; // Run away from object
-                        ai.talkText = "Too fast!";
+                        const timidLines = ["Too fast!", "Scary!", "Stay back!", "Oh my...", "Eek!", "Danger!"];
+                        ai.talkText = timidLines[Math.floor(Math.random() * timidLines.length)];
                     }
                 }
             }
@@ -882,12 +937,83 @@
                     // Stop chasing if reached or bored
                     if (Math.abs(dx) < 40 || time > ai.nextActionTime) {
                         ai.targetBody = null;
-                        ai.talkText = "Hmm...";
+                        const exploreLines = ["Hmm...", "Interesting.", "What is that?", "Shiny...", "Analyzing...", "Curious.", "Nice."];
+                        ai.talkText = exploreLines[Math.floor(Math.random() * exploreLines.length)];
                         setTimeout(() => ai.talkText = "", 1000);
                     }
                 } else {
                     ai.targetBody = null; // Object destroyed
                 }
+            }
+
+            // NEW: CAR DRIVING BEHAVIOR
+            // 1. Look for a car
+            if (ai.state === 'walk' && !ai.vehicle && Math.random() < 0.02) { 
+                const cars = interactables.filter(b => b.customType === 'carBody' && !b.driver);
+                for (let car of cars) {
+                    const dist = Vector.magnitude(Vector.sub(body.position, car.position));
+                    if (dist < 120) {
+                        // ENTER CAR
+                        ai.state = 'driving';
+                        ai.vehicle = car;
+                        car.driver = body;
+                        ai.talkText = Math.random() > 0.5 ? "Road trip!" : "Vroom!";
+                        
+                        // Teleport to seat (slightly above center)
+                        const seatPos = Vector.add(car.position, {x: 0, y: -20});
+                        Body.setPosition(body, seatPos);
+                        Body.setVelocity(body, car.velocity); // Match speed instantly
+                        
+                        // Prevent collision conflict (Simplified: just attach strongly)
+                        // Ideally we'd change collision groups, but stiff constraint works okay
+                        
+                        // Create Seatbelt
+                        ai.seatbelt = Constraint.create({
+                            bodyA: car,
+                            bodyB: body,
+                            pointA: {x: 0, y: -15},
+                            pointB: {x: 0, y: 0},
+                            stiffness: 0.1, 
+                            length: 0,
+                            render: { visible: false }
+                        });
+                        Composite.add(world, ai.seatbelt);
+                        break;
+                    }
+                }
+            }
+            
+            // 2. Drive the car
+            if (ai.state === 'driving' && ai.vehicle) {
+                // Safety check: Car destroyed?
+                if (!Composite.allBodies(world).includes(ai.vehicle)) {
+                    ai.state = 'walk';
+                    ai.vehicle = null;
+                    if (ai.seatbelt) Composite.remove(world, ai.seatbelt);
+                    return;
+                }
+                
+                // Change direction occasionally
+                if (time > ai.nextActionTime) {
+                    ai.direction = Math.random() > 0.5 ? 1 : -1;
+                    ai.nextActionTime = time + 2000 + Math.random() * 3000;
+                    if (Math.random() < 0.3) ai.talkText = "Beep beep!";
+                    else ai.talkText = "";
+                }
+                
+                // Apply torque to wheels
+                if (ai.vehicle.wheels) {
+                    ai.vehicle.wheels.forEach(w => {
+                        w.torque += 0.25 * w.mass * ai.direction;
+                    });
+                }
+                
+                // Force head upright-ish relative to world, so they look around while driving
+                if (body.relatedHead) {
+                    Body.setAngle(body.relatedHead, 0); 
+                }
+                
+                return; // Skip walking physics
             }
 
             // 4. SELF-RIGHTING & WALKING ANIMATION (Updated)
@@ -935,8 +1061,8 @@
                     const dist = Vector.magnitude(Vector.sub(body.position, other.position));
                     if (dist < 80) {
                         // Intelligent Conversation
-                        const greetings = ["Hi friend!", "Greetings!", "Hello!", "Hey there!"];
-                        const replies = ["Good day!", "Hi!", "Yo!", "Physics rules!"];
+                        const greetings = ["Hi friend!", "Greetings!", "Hello!", "Hey there!", "Nice pixels!", "Physics is fun!", "Don't push me!", "Lovely day!"];
+                        const replies = ["Good day!", "Hi!", "Yo!", "Physics rules!", "Indeed!", "Stay safe!", "I'm walking here!", "Cool!"];
                         
                         ai.state = 'talk';
                         ai.talkDuration = 150;
