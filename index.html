@@ -40,7 +40,7 @@
             border: 1px solid var(--border);
             pointer-events: auto;
             z-index: 10;
-            min-width: 220px;
+            min-width: 240px; /* Slightly wider for buttons */
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             
             /* NEW: Collapsible Animation (Like Spawn Menu) */
@@ -52,7 +52,7 @@
 
         /* NEW: Expand on Hover */
         #ui-left:hover {
-            max-height: 80vh; /* Expand to fit content */
+            max-height: 85vh; /* Expand to fit content */
             overflow-y: auto; /* Enable scroll if needed */
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
             background: rgba(15, 23, 42, 0.95);
@@ -139,11 +139,9 @@
 
         /* Hide game UI when menu is open */
         body.menu-active #ui-left,
-        body.menu-active #spawn-menu,
         body.menu-active #fps-counter,
         body.menu-active #item-counter,
-        body.gui-hidden #ui-left,
-        body.gui-hidden #spawn-menu {
+        body.gui-hidden #ui-left {
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
@@ -183,56 +181,6 @@
             transition: opacity 0.3s;
         }
 
-        #spawn-menu {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: var(--panel-bg);
-            color: var(--text-color);
-            padding: 15px;
-            border-radius: 16px;
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            z-index: 10;
-            width: 160px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            
-            /* Animation */
-            max-height: 52px;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, box-shadow 0.3s;
-            opacity: 0.9;
-            cursor: pointer;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        #spawn-menu:hover {
-            max-height: 70vh; /* Limit height to 70% of screen */
-            overflow-y: auto; /* Enable Vertical Scrolling */
-            opacity: 1;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-            background: rgba(15, 23, 42, 0.95);
-        }
-
-        /* Custom Scrollbar for Spawn Menu */
-        #spawn-menu::-webkit-scrollbar {
-            width: 6px;
-        }
-        #spawn-menu::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-        #spawn-menu::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-        #spawn-menu::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
-
         h1 {
             margin: 0 0 8px 0;
             font-size: 1.1rem;
@@ -259,28 +207,12 @@
             color: var(--accent);
         }
 
-        #spawn-menu h2 {
-            margin: 0;
-            font-size: 1rem;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        /* Spawn Button Grid Styles */
+        .spawn-grid {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2px 0;
-        }
-
-        #spawn-menu h2::after {
-            content: '▼';
-            font-size: 0.8em;
-            transition: transform 0.4s;
-            color: rgba(255,255,255,0.5);
-        }
-
-        #spawn-menu:hover h2::after {
-            transform: rotate(180deg);
-            color: var(--accent);
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .spawn-btn {
@@ -298,6 +230,8 @@
             gap: 10px;
             flex-shrink: 0;
             font-weight: 500;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .spawn-btn:hover {
@@ -353,6 +287,27 @@
             color: #e2e8f0;
         }
 
+        /* NEW: Editable Values CSS */
+        .editable-val {
+            cursor: text;
+            border-bottom: 1px dashed rgba(255,255,255,0.3);
+            transition: border-color 0.2s;
+        }
+        .editable-val:hover {
+            border-bottom-color: var(--accent);
+            color: white;
+        }
+        .value-input {
+            width: 60px;
+            background: #1e293b;
+            border: 1px solid var(--accent);
+            color: var(--text-color);
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
         input[type=range] {
             width: 100%;
             cursor: pointer;
@@ -395,16 +350,22 @@
 <div id="ui-left">
     <h1>Physics Lab</h1>
     <p style="font-size: 0.85rem; color: #cbd5e1;">Advanced AI Enabled.</p>
+    
+    <!-- CONTROLS LIST -->
     <div class="key-hint"><span class="key-box">Click x5</span> or <b>Slam</b> to explode</div>
-    <div class="key-hint"><span class="key-box">E</span> Quick Spawn</div>
+    <div class="key-hint"><span class="key-box">E</span> Quick Spawn (Hold for stream)</div>
+    <div class="key-hint"><span class="key-box">3</span> Explode Everything</div>
+    <div class="key-hint"><span class="key-box">F</span> Fire Blasters</div>
     <div class="key-hint"><span class="key-box">M</span> Toggle UI</div>
     <div class="key-hint"><span class="key-box">T</span> Slow Motion</div>
-    <div class="key-hint"><span class="key-box">← →</span> Drive Cars</div>
-    
+    <div class="key-hint"><span class="key-box">2</span> Clear World</div>
+    <div class="key-hint"><span class="key-box">WASD</span> or <span class="key-box">← →</span> Drive / Aim</div>
+    <div class="key-hint"><span class="key-box">ESC</span> Pause Menu</div>
+
     <div class="control-group">
         <div class="slider-label">
             <span>Gravity</span>
-            <span id="gravity-val">1.5</span>
+            <span id="gravity-val" class="editable-val">1.5</span>
         </div>
         <input type="range" id="gravity-slider" min="-2" max="5" step="0.1" value="1.5">
     </div>
@@ -413,7 +374,7 @@
     <div class="control-group">
         <div class="slider-label">
             <span>Spawn Size</span>
-            <span id="size-val">1.0x</span>
+            <span id="size-val" class="editable-val">1.0x</span>
         </div>
         <!-- UPDATED: min to 0.1, max to 5 -->
         <input type="range" id="size-slider" min="0.1" max="5" step="0.1" value="1.0">
@@ -423,7 +384,7 @@
     <div class="control-group">
         <div class="slider-label">
             <span>Spawn Count</span>
-            <span id="count-val">1</span>
+            <span id="count-val" class="editable-val">1</span>
         </div>
         <input type="range" id="count-slider" min="1" max="20" step="1" value="1">
     </div>
@@ -438,26 +399,45 @@
     <div class="control-group">
         <div class="slider-label">
             <span>Max FPS</span>
-            <span id="fps-val">60</span>
+            <span id="fps-val" class="editable-val">60</span>
         </div>
         <input type="range" id="fps-slider" min="30" max="150" step="30" value="60">
     </div>
-</div>
 
-<div id="spawn-menu">
-    <h2>Spawn Menu</h2>
-    <!-- UPDATED: Buttons now call selectAndSpawn -->
-    <button class="spawn-btn" onclick="selectAndSpawn('block')">📦 Crate</button>
-    <button class="spawn-btn" onclick="selectAndSpawn('heavy')">🪨 Heavy Metal</button>
-    <button class="spawn-btn" onclick="selectAndSpawn('blackhole')">⚫ Black Hole</button>
-    <button class="spawn-btn" onclick="selectAndSpawn('ball')">🎱 Sphere</button>
-    <button class="spawn-btn" onclick="selectAndSpawn('water')">💧 Water</button> <!-- NEW BUTTON -->
-    <button class="spawn-btn" onclick="selectAndSpawn('car')">🏎️ Sport Car</button>
-    <button class="spawn-btn" onclick="selectAndSpawn('person')">🏃 Ragdoll (AI)</button>
-    <button class="spawn-btn" onclick="selectAndSpawn('launcher')">🔫 Blaster</button>
-    <!-- NEW: Delete Tool Button -->
-    <button class="spawn-btn" onclick="selectAndSpawn('delete')" style="border-color: #ef4444; color: #ef4444;">❌ Delete Tool</button>
-    <button class="spawn-btn clear" onclick="clearAllShapes()">🗑️ Clear World (2)</button>
+    <!-- NEW: Explosion Power Slider -->
+    <div class="control-group">
+        <div class="slider-label">
+            <span>Boom Power</span>
+            <span id="power-val" class="editable-val">1.0x</span>
+        </div>
+        <input type="range" id="power-slider" min="0.1" max="100.0" step="0.1" value="1.0">
+    </div>
+
+    <!-- NEW: Explosion Range Slider -->
+    <div class="control-group">
+        <div class="slider-label">
+            <span>Boom Range</span>
+            <span id="range-val" class="editable-val">600</span>
+        </div>
+        <input type="range" id="range-slider" min="100" max="100000" step="50" value="600">
+    </div>
+
+    <!-- MOVED: Spawn Buttons Section -->
+    <div class="control-group">
+        <div class="slider-label" style="color: var(--accent); text-transform: uppercase; letter-spacing: 1px;">Tools & Objects</div>
+        <div class="spawn-grid">
+            <button class="spawn-btn" onclick="selectAndSpawn('block')">📦 Crate</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('heavy')">🪨 Heavy Metal</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('blackhole')">⚫ Black Hole</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('ball')">🎱 Sphere</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('water')">💧 Water</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('car')">🏎️ Sport Car</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('person')">🏃 Ragdoll (AI)</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('launcher')">🔫 Blaster</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('delete')" style="border-color: #ef4444; color: #ef4444;">❌ Delete Tool</button>
+            <button class="spawn-btn clear" onclick="clearAllShapes()">🗑️ Clear World (2)</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -473,43 +453,105 @@
     document.addEventListener('mousedown', resumeAudio, { once: true });
     document.addEventListener('keydown', resumeAudio, { once: true });
 
+    // --- NEW: ADVANCED AUDIO SYSTEM ---
+    function playImpactSound(speed, type) {
+        if (audioCtx.state === 'suspended') return;
+        // Don't play sound for tiny bumps
+        if (speed < 1.5) return;
+
+        const t = audioCtx.currentTime;
+        const vol = Math.min(0.8, (speed - 1.5) / 15); // Volume scales with speed
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'metal') {
+            // STEEL CLANG (Improved FM Synthesis)
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const modGain = audioCtx.createGain();
+            
+            // Higher base pitch for "Steel" (800Hz range)
+            const baseFreq = 800 + Math.random() * 400;
+            
+            osc1.type = 'sine'; // Carrier: Sine gives a clean "ring"
+            osc1.frequency.setValueAtTime(baseFreq, t);
+            
+            osc2.type = 'square'; // Modulator: Square adds harsh metallic harmonics
+            osc2.frequency.setValueAtTime(baseFreq * 1.4, t); // Inharmonic ratio
+            
+            // Modulation Depth (The "Clang")
+            modGain.gain.setValueAtTime(1000, t); 
+            modGain.gain.exponentialRampToValueAtTime(10, t + 0.3); // Sharp attack fades to pure ring
+            
+            osc2.connect(modGain);
+            modGain.connect(osc1.frequency);
+            osc1.connect(gain);
+            
+            osc1.start(t); osc2.start(t);
+            osc1.stop(t + 0.5); osc2.stop(t + 0.5); // Longer ring for steel
+        } else {
+            // WOOD/DEFAULT THUD (Filtered Noise)
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            // Harder hits = Brighter sound
+            filter.frequency.setValueAtTime(200 + (speed * 50), t);
+            filter.Q.value = 1;
+
+            noise.connect(filter);
+            filter.connect(gain);
+            noise.start(t);
+        }
+    }
+
     function playExplosionSound() {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const t = audioCtx.currentTime;
 
-        // 1. Noise Burst (The "Crunch")
-        const bufferSize = audioCtx.sampleRate * 0.5; // 0.5 seconds
+        // 1. Noise Burst (The "Crunch") - LOUDER AND PUNCHIER
+        const bufferSize = audioCtx.sampleRate * 0.6; 
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
+            data[i] = (Math.random() * 2 - 1) * (1 - i/bufferSize); // Decay built-in
         }
 
         const noise = audioCtx.createBufferSource();
         noise.buffer = buffer;
+        
         const noiseFilter = audioCtx.createBiquadFilter();
         noiseFilter.type = 'lowpass';
-        noiseFilter.frequency.setValueAtTime(800, t);
-        noiseFilter.frequency.linearRampToValueAtTime(0, t + 0.4);
+        noiseFilter.frequency.setValueAtTime(1000, t);
+        noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 0.4);
         
         const noiseGain = audioCtx.createGain();
-        noiseGain.gain.setValueAtTime(0.4, t);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+        noiseGain.gain.setValueAtTime(0.8, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
 
         noise.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
         noiseGain.connect(audioCtx.destination);
         noise.start();
 
-        // 2. Low Oscillator (The "Boom")
+        // 2. Sub-Bass Impact (The "Thump")
         const osc = audioCtx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(100, t);
-        osc.frequency.exponentialRampToValueAtTime(20, t + 0.4);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(80, t);
+        osc.frequency.exponentialRampToValueAtTime(10, t + 0.5); // Drop pitch fast
 
         const oscGain = audioCtx.createGain();
-        oscGain.gain.setValueAtTime(0.6, t);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        oscGain.gain.setValueAtTime(1.0, t);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
 
         osc.connect(oscGain);
         oscGain.connect(audioCtx.destination);
@@ -522,26 +564,31 @@
         const t = audioCtx.currentTime;
         
         const osc = audioCtx.createOscillator();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(400, t);
-        osc.frequency.exponentialRampToValueAtTime(50, t + 0.1); // Shorter pew
+        osc.type = 'sawtooth'; // More aggressive
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.15); 
         
         const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
         
-        osc.connect(gain);
+        // Highpass to remove muddy low end
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 500;
+
+        osc.connect(filter);
+        filter.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(t + 0.1);
+        osc.stop(t + 0.15);
     }
 
     const { Engine, Render, Runner, Bodies, Composite, MouseConstraint, Mouse, Vector, Events, Body, Constraint } = Matter;
 
     const engine = Engine.create({
-        // OPTIMIZATION: Reduce iterations for higher performance (0 lag)
-        positionIterations: 4, 
-        velocityIterations: 3
+        positionIterations: 5, // Improved stability for impact sounds
+        velocityIterations: 4
     });
     const world = engine.world;
     engine.gravity.y = 1.5;
@@ -553,21 +600,21 @@
         options: {
             width: window.innerWidth,
             height: window.innerHeight,
-            wireframes: false, // We will draw custom textures over this
+            wireframes: false, 
             background: '#0f172a',
             pixelRatio: window.devicePixelRatio || 1
         }
     });
-
-    // UPDATED: Removed Render.run and Runner.run to implement custom loop
-    // Render.run(render); 
-    // const runner = Runner.create(); 
 
     // --- GAME STATE MANAGEMENT ---
     let isGameRunning = false;
     let isSlowMotion = false; 
     const homeMenu = document.getElementById('home-menu');
     
+    // NEW: VFX Variables
+    const vfx = []; // Stores active visual effects
+    let shakeIntensity = 0; // Screen shake
+
     // NEW: Custom Game Loop Variables
     let lastTime = 0;
     let animationFrameId = null;
@@ -582,7 +629,6 @@
         
         animationFrameId = requestAnimationFrame(gameLoop);
 
-        // Initialize timers on first frame
         if (!lastTime) {
             lastTime = time;
             lastRenderTime = time;
@@ -590,35 +636,37 @@
         }
 
         // FPS THROTTLING
-        // If not set to MAX (150 in slider), throttle the rendering
         if (targetFPS < 150) {
             const elapsed = time - lastRenderTime;
-            if (elapsed < frameInterval) return; // Skip this frame
-            
-            // Adjust lastRenderTime to maintain consistent intervals
+            if (elapsed < frameInterval) return; 
             lastRenderTime = time - (elapsed % frameInterval);
         }
 
         const dt = time - lastTime;
         lastTime = time;
-
-        // Cap delta time to prevent physics explosions if tab was inactive
-        // or if there was a massive lag spike (prevents "spiral of death")
         const safeDt = Math.min(dt, 100);
-
-        // Apply Time Scale (Slow Motion)
-        // We manually scale the delta time passed to the engine
         const timeScale = isSlowMotion ? 0.2 : 1.0;
         const scaledDt = safeDt * timeScale;
 
         // Update Physics
-        // Using strict delta time ensures gameplay speed is consistent 
-        // regardless of whether you have 30 FPS or 144 FPS.
         Engine.update(engine, scaledDt);
+        
+        // NEW: Screen Shake Logic
+        const ctx = render.context;
+        ctx.save();
+        if (shakeIntensity > 0) {
+            const shakeX = (Math.random() - 0.5) * shakeIntensity;
+            const shakeY = (Math.random() - 0.5) * shakeIntensity;
+            ctx.translate(shakeX, shakeY);
+            shakeIntensity *= 0.9; // Decay
+            if (shakeIntensity < 0.5) shakeIntensity = 0;
+        }
 
         // Render Frame
-        // We manually call Render.world to sync it with our custom loop
         Render.world(render);
+        
+        // Restore context (End Shake)
+        ctx.restore();
     }
 
     function togglePause() {
@@ -629,20 +677,18 @@
             homeMenu.classList.add('hidden');
             document.body.classList.remove('menu-active');
             
-            // Reset timers to prevent jumps
+            // Reset timers
             lastTime = 0;
             lastRenderTime = 0;
             // Start Loop
             animationFrameId = requestAnimationFrame(gameLoop);
             
-            // Allow audio context to resume on user interaction
             if (audioCtx.state === 'suspended') audioCtx.resume();
         } else {
             // Pause
             homeMenu.classList.remove('hidden');
             document.body.classList.add('menu-active');
             
-            // Stop Loop
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
@@ -655,7 +701,6 @@
     let ground, leftWall, rightWall, ceiling;
 
     function createWalls() {
-        // Remove existing walls/corners
         const bodies = Composite.allBodies(world);
         const wallsToRemove = bodies.filter(b => b.isStatic && b.customType !== 'blackhole'); 
         Composite.remove(world, wallsToRemove);
@@ -664,14 +709,11 @@
         const w = window.innerWidth;
         const h = window.innerHeight;
         
-        // Standard Walls
         ground = Bodies.rectangle(w / 2, h + thick/2, w, thick, wallOptions);
         leftWall = Bodies.rectangle(-thick/2, h / 2, thick, h, wallOptions);
         rightWall = Bodies.rectangle(w + thick/2, h / 2, thick, h, wallOptions);
         ceiling = Bodies.rectangle(w / 2, -thick/2, w, thick, wallOptions);
         
-        // Corners removed
-
         Composite.add(world, [ground, leftWall, rightWall, ceiling]);
     }
     createWalls();
@@ -680,21 +722,20 @@
 
     // --- GLOBAL SPAWN SELECTION ---
     let currentSpawnType = 'block';
-    let spawnScale = 1.0; // Default size multiplier
+    let spawnScale = 1.0; 
+    // NEW: Global Explosion Settings
+    let explosionPower = 1.0;
+    let explosionRange = 600;
 
     function selectAndSpawn(type) {
         currentSpawnType = type;
-        // Don't spawn anything immediately if we just selected the delete tool
         if (type !== 'delete') {
             spawnEntity(type);
         }
     }
 
     function spawnEntity(type, x, y) {
-        // Fallback x and y
-        // Spread X more (random * 600) so they don't stack perfectly and topple
         const posX = (x !== undefined) ? x : (window.innerWidth / 2 + (Math.random() * 600 - 300));
-        // Spawn on ground (height - 150px) instead of sky (100px)
         const posY = (y !== undefined) ? y : (window.innerHeight - 150);
         
         const color = palette[Math.floor(Math.random() * palette.length)];
@@ -709,26 +750,19 @@
             entityType: type 
         };
 
-        // Apply scale ONLY if not a person (ragdoll)
         const s = (type === 'person') ? 1.0 : spawnScale;
-
-        // NEW: 3D Mass & Drag Scaling
-        // This makes scale feel "real" (Square-Cube Law)
-        // Mass scales by s^3 (Volume) instead of just s^2 (Area)
-        // Drag scales inversely to size (Big things cut through air easier)
         const densityScale = s; 
         const dragScale = 1 / Math.max(0.1, s);
 
         try {
             if (type === 'block') {
-                // FIXED SIZE: Removed Math.random() so they are all uniform
                 const size = 60 * s; 
                 const b = Bodies.rectangle(posX, posY, size, size, { 
                     render: { fillStyle: color }, 
                     chamfer: { radius: 4 * s }, 
                     restitution: 0.4,
-                    frictionAir: 0.01 * dragScale, // Small = High Drag, Big = Low Drag
-                    density: 0.001 * densityScale  // Small = Light, Big = Dense
+                    frictionAir: 0.01 * dragScale,
+                    density: 0.001 * densityScale
                 });
                 Object.assign(b, commonProps);
                 b.customType = 'crate';
@@ -737,10 +771,10 @@
             else if (type === 'heavy') {
                 const size = 60 * s;
                 const b = Bodies.rectangle(posX, posY, size, size, { 
-                    render: { fillStyle: '#64748b' }, // Slate grey
+                    render: { fillStyle: '#64748b' }, 
                     chamfer: { radius: 2 * s }, 
-                    restitution: 0.1, // Low bounce (heavy thud)
-                    density: 50 * densityScale, // EXTREMELY DENSE (Scales with size)
+                    restitution: 0.1, 
+                    density: 50 * densityScale, 
                     friction: 0.6,
                     frictionAir: 0.005 * dragScale
                 });
@@ -751,17 +785,16 @@
             else if (type === 'blackhole') {
                 const b = Bodies.circle(posX, posY, 30 * s, {
                     render: { fillStyle: '#000000' },
-                    density: 100 * densityScale, // Super heavy
-                    frictionAir: 0.1 * dragScale, // High drag to keep it stable
+                    density: 100 * densityScale, 
+                    frictionAir: 0.1 * dragScale, 
                     restitution: 0,
-                    isStatic: false // It moves, but we will make it hover
+                    isStatic: false 
                 });
                 Object.assign(b, commonProps);
                 b.customType = 'blackhole';
                 Composite.add(world, b);
             }
             else if (type === 'ball') {
-                // FIXED SIZE: Removed Math.random()
                 const r = 30 * s;
                 const b = Bodies.circle(posX, posY, r, { 
                     render: { fillStyle: color }, 
@@ -774,98 +807,69 @@
                 b.customType = 'sphere';
                 Composite.add(world, b);
             }
-            // NEW: Water Particle Logic
             else if (type === 'water') {
-                // PHYSICS UPDATE: Smaller particles + Liquid properties
-                // Smaller radius (r) helps it conform to shapes better
                 const r = (5 + Math.random() * 2) * s; 
-                
                 const b = Bodies.circle(posX, posY, r, {
                     render: { fillStyle: 'rgba(56, 189, 248, 0.6)' },
-                    friction: 0.0,       // Zero friction (Slippery)
-                    frictionStatic: 0.0, // Instantly slides
-                    frictionAir: 0.001,  // Extremely low drag
-                    restitution: 0.0,    // Zero bounce (Real liquids don't bounce like balls)
-                    density: 0.005,      // Constant density for water (fluids don't compress much)
-                    slop: 0.1            // Allows slight overlap for softer feel
+                    friction: 0.0,       
+                    frictionStatic: 0.0, 
+                    frictionAir: 0.001,  
+                    restitution: 0.0,    
+                    density: 0.005,      
+                    slop: 0.1            
                 });
-                
-                // Add initial "Spray" velocity
-                Body.setVelocity(b, {
-                    x: (Math.random() - 0.5) * 5, 
-                    y: (Math.random() - 0.5) * 5
-                });
-
+                Body.setVelocity(b, { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 });
                 Object.assign(b, commonProps);
                 b.customType = 'water';
                 Composite.add(world, b);
             }
             else if (type === 'car') {
-                // CAR uses standard density scaling (Mass ~ s^2) to prevent suspension from collapsing
                 const group = Body.nextGroup(true);
-                // Scale car dimensions and offsets
                 const chassis = Bodies.rectangle(posX, posY, 100 * s, 20 * s, { 
                     collisionFilter: { group: group },
                     render: { fillStyle: color },
                     chamfer: { radius: 5 * s },
-                    density: 0.02 // Reverted to previous density
+                    density: 0.02 
                 });
                 const cabin = Bodies.trapezoid(posX, posY - 25 * s, 60 * s, 30 * s, 0.3, {
                     collisionFilter: { group: group },
                     render: { fillStyle: '#1e293b' },
-                    density: 0.005 // Reverted to previous density
+                    density: 0.005 
                 });
                 const body = Body.create({ parts: [chassis, cabin] });
                 
-                // Bigger wheels for better handling
                 const wheelSize = 16 * s;
-                // WHEELS: Reverted settings
                 const wheelOptions = { 
                     collisionFilter: { group: group },
                     friction: 1.0,   
                     restitution: 0,  
                     render: { fillStyle: '#333' },
-                    density: 0.05    // Reverted to heavy wheels
+                    density: 0.05    
                 };
                 
                 const wheel1 = Bodies.circle(posX - 35 * s, posY + 15 * s, wheelSize, wheelOptions);
                 const wheel2 = Bodies.circle(posX + 35 * s, posY + 15 * s, wheelSize, wheelOptions);
                 
-                // SUSPENSION TUNING: Reverted to previous springs
                 const axel1 = Constraint.create({ 
-                    bodyA: body, 
-                    pointA: { x: -35 * s, y: 15 * s }, 
-                    bodyB: wheel1, 
-                    pointB: { x: 0, y: 0 }, 
-                    stiffness: 0.2, // Reverted stiffness
-                    damping: 0.1,   // Reverted damping
-                    length: 0, 
-                    render: { visible: false } 
+                    bodyA: body, pointA: { x: -35 * s, y: 15 * s }, 
+                    bodyB: wheel1, pointB: { x: 0, y: 0 }, 
+                    stiffness: 0.2, damping: 0.1, length: 0, render: { visible: false } 
                 });
-                
                 const axel2 = Constraint.create({ 
-                    bodyA: body, 
-                    pointA: { x: 35 * s, y: 15 * s }, 
-                    bodyB: wheel2, 
-                    pointB: { x: 0, y: 0 }, 
-                    stiffness: 0.2, // Reverted stiffness
-                    damping: 0.1,   // Reverted damping
-                    length: 0, 
-                    render: { visible: false } 
+                    bodyA: body, pointA: { x: 35 * s, y: 15 * s }, 
+                    bodyB: wheel2, pointB: { x: 0, y: 0 }, 
+                    stiffness: 0.2, damping: 0.1, length: 0, render: { visible: false } 
                 });
                 
                 [body, wheel1, wheel2].forEach(p => Object.assign(p, commonProps));
                 body.customType = 'carBody';
                 wheel1.customType = 'wheel'; wheel2.customType = 'wheel';
-                
-                // NEW: Store wheels and driver info on the main body for AI access
                 body.wheels = [wheel1, wheel2];
                 body.driver = null;
 
                 Composite.add(world, [body, wheel1, wheel2, axel1, axel2]);
             }
             else if (type === 'person') {
-                // NOTE: People ignore 's' (spawnScale) and use default size
                 const group = Body.nextGroup(true);
                 const startY = posY;
                 const head = Bodies.circle(posX, startY - 25, 12, { collisionFilter: { group: group }, render: { fillStyle: '#ffccaa' } });
@@ -885,55 +889,55 @@
                 head.customType = 'face'; 
                 torso.customType = 'ragdoll';
                 
-                // --- ADVANCED AI INITIALIZATION ---
                 const personalities = ['social', 'explorer', 'timid'];
                 const pType = personalities[Math.floor(Math.random() * personalities.length)];
                 
                 torso.ai = {
                     state: 'walk',
-                    personality: pType, // social, explorer, timid
+                    personality: pType, 
                     direction: Math.random() > 0.5 ? 1 : -1,
                     nextActionTime: 0,
                     isStuckCount: 0,
                     socialCooldown: 0,
                     talkDuration: 0,
                     talkText: '',
-                    fearTarget: null, // Point to run away from
-                    targetBody: null, // Object to chase (if explorer)
-                    vehicle: null, // NEW: Car being driven
-                    seatbelt: null // NEW: Constraint to hold them in
+                    fearTarget: null, 
+                    targetBody: null, 
+                    vehicle: null, 
+                    seatbelt: null 
                 };
                 
                 head.relatedTorso = torso;
                 torso.relatedHead = head;
-                
-                // Store legs for walking animation
                 torso.legs = { right: rightLeg, left: leftLeg };
-                // Store all parts for collision updates
                 torso.allParts = [head, torso, rightArm, leftArm, rightLeg, leftLeg];
 
                 Composite.add(world, [head, torso, rightArm, leftArm, rightLeg, leftLeg, neck, armRA, armLA, legRA, legLA]);
             }
             else if (type === 'launcher') {
+                // NEW: Generate a unique collision group so bullets don't hit the gun
+                const group = Body.nextGroup(true);
+
                 const gunBody = Bodies.rectangle(posX, posY, 60 * s, 20 * s, {
                     render: { fillStyle: '#475569' },
                     chamfer: { radius: 4 * s },
-                    density: 0.05 * densityScale, // Heavy
-                    frictionAir: 0.05 * dragScale
+                    density: 0.05 * densityScale, 
+                    frictionAir: 0.05 * dragScale,
+                    collisionFilter: { group: group } // Assign group
                 });
                 const handle = Bodies.rectangle(posX - 15 * s, posY + 15 * s, 15 * s, 30 * s, {
                     render: { fillStyle: '#334155' },
                     chamfer: { radius: 2 * s },
-                    density: 0.05 * densityScale
+                    density: 0.05 * densityScale,
+                    collisionFilter: { group: group } // Assign group
                 });
                 const body = Body.create({ parts: [gunBody, handle] });
                 
                 Object.assign(body, commonProps);
-                // Stabilize the gun
                 body.frictionAir = 0.05 * dragScale; 
                 body.customType = 'launcher';
-                // Launcher specific state
-                body.launcher = { lastShot: 0, cooldown: 150 }; // 150ms cooldown
+                body.collisionGroup = group; // Store group for bullets
+                body.launcher = { lastShot: 0, cooldown: 150 }; 
                 
                 Composite.add(world, body);
             }
@@ -945,31 +949,26 @@
     // --- HELPER: Fire a single launcher ---
     function fireLauncher(launcher) {
         const now = Date.now();
-        // Check cooldown
         if (now - launcher.launcher.lastShot < launcher.launcher.cooldown) return;
         
         launcher.launcher.lastShot = now;
         playShootSound();
         
-        // Calculate barrel position. Note: We assume standard scale for projectile origin for now, 
-        // or we could estimate scale from area. But for simplicity, we keep offset standard-ish 
-        // or we could store scale on launcher object. 
-        // Let's approximate: 
-        const approximateScale = (launcher.bounds.max.x - launcher.bounds.min.x) / 75; // 60+15 approx
+        const approximateScale = (launcher.bounds.max.x - launcher.bounds.min.x) / 75; 
         
         const len = 35 * approximateScale;
         const angle = launcher.angle;
         const barrelX = launcher.position.x + Math.cos(angle) * len;
         const barrelY = launcher.position.y + Math.sin(angle) * len;
         
-        // Create Projectile (Scale it too? Let's keep bullets standard size for consistency)
         const projectile = Bodies.circle(barrelX, barrelY, 6, {
             density: 0.05,
             restitution: 0.5,
-            render: { fillStyle: '#ef4444' }
+            render: { fillStyle: '#ef4444' },
+            // NEW: Inherit collision group so it passes through the gun
+            collisionFilter: { group: launcher.collisionGroup }
         });
         
-        // Add HIGH velocity
         const force = 0.4;
         Body.applyForce(projectile, projectile.position, {
             x: Math.cos(angle) * force,
@@ -978,14 +977,12 @@
         
         projectile.isTarget = true; 
         projectile.tapCount = 5; 
-        // IMPORTANT: Assign unique group ID to prevent wall destruction
         projectile.groupId = Math.random().toString(36).substr(2, 9);
         projectile.entityType = 'projectile';
-        projectile.trail = []; // NEW: Array to store trail positions
+        projectile.trail = []; 
         
         Composite.add(world, projectile);
         
-        // Recoil
         Body.applyForce(launcher, launcher.position, {
             x: -Math.cos(angle) * 0.05,
             y: -Math.sin(angle) * 0.05
@@ -1002,24 +999,15 @@
         const bodies = Composite.allBodies(world);
         const time = engine.timing.timestamp;
         
-        // --- PERFORMANCE: VOID CLEANUP ---
-        // If objects fall out of the map (way below screen), remove them to save memory
         const fallenBodies = bodies.filter(b => b.position.y > window.innerHeight + 1000);
         if (fallenBodies.length > 0) {
             Composite.remove(world, fallenBodies);
         }
 
-        // --- PERFORMANCE: ANTI-LAG SYSTEM ---
-        // If too many items, delete the oldest dynamic ones (excluding walls/blackholes)
-        // Limit increased to 3000 dynamic bodies
-        // NEW: Check toggle state before deleting
         if (isLimitActive) {
             const dynamicBodies = bodies.filter(b => !b.isStatic && b.customType !== 'blackhole');
             if (dynamicBodies.length > 3000) {
-                // Sort by creation time (oldest first) or just take the first ones since array order usually matches
-                // We remove the oldest 5 to quickly get back under limit
                 const toRemove = dynamicBodies.slice(0, 5); 
-                // Don't delete the car the player is currently driving if possible
                 const safeToRemove = toRemove.filter(b => !b.driver);
                 if (safeToRemove.length > 0) {
                     Composite.remove(world, safeToRemove);
@@ -1032,58 +1020,55 @@
         const launchers = bodies.filter(b => b.customType === 'launcher');
         const blackholes = bodies.filter(b => b.customType === 'blackhole');
 
-        // --- CAR DRIVING LOGIC ---
-        // Arrow Keys or WASD to drive
         if (keys['arrowright'] || keys['d']) {
+            // Drive Cars
             bodies.forEach(b => {
                 if (b.customType === 'wheel') {
-                    // Apply torque proportional to mass
                     b.torque += 0.3 * b.mass; 
                 }
             });
+            // NEW: Aim Launchers (Rotate Clockwise)
+            launchers.forEach(l => {
+                Body.setAngularVelocity(l, 0.15);
+            });
         }
         if (keys['arrowleft'] || keys['a']) {
+            // Drive Cars
             bodies.forEach(b => {
                 if (b.customType === 'wheel') {
                     b.torque -= 0.3 * b.mass;
                 }
             });
+            // NEW: Aim Launchers (Rotate Counter-Clockwise)
+            launchers.forEach(l => {
+                Body.setAngularVelocity(l, -0.15);
+            });
         }
 
-        // --- BLACK HOLE LOGIC ---
         blackholes.forEach(bh => {
-            // 1. Anti-Gravity Hover (Apply force equal and opposite to gravity)
             const gravity = engine.world.gravity;
             Body.applyForce(bh, bh.position, {
                 x: 0,
                 y: -bh.mass * gravity.y * gravity.scale
             });
 
-            // 2. Gravitational Pull
             bodies.forEach(other => {
-                // RESTORED: Can suck each other
                 if (other === bh || other.isStatic || other.customType === 'launcher') return;
                 
                 const dVec = Vector.sub(bh.position, other.position);
                 const dist = Vector.magnitude(dVec);
 
-                // Pull range (800px)
                 if (dist < 800) {
                     const dir = Vector.normalise(dVec);
-                    // Force strength
                     const strength = 0.002 * other.mass * (1000 / (dist + 50)); 
                     
                     Body.applyForce(other, other.position, Vector.mult(dir, strength));
 
-                    // 3. Event Horizon (Crush objects)
                     if (dist < bh.circleRadius + 15) {
-                        // If it's a target object, explode it
                         if (other.isTarget && !other.isExploding) {
-                            // Grow the black hole when it eats something
                             const growth = 1.05;
                             Body.scale(bh, growth, growth);
-                            bh.circleRadius *= growth; // Update radius for future calculations
-                            
+                            bh.circleRadius *= growth; 
                             triggerExplosion(other);
                         }
                     }
@@ -1091,20 +1076,14 @@
             });
         });
 
-        // --- LAUNCHER LOGIC (Hold F or 1) ---
         if (keys['1']) {
-            // FIRE ALL
             launchers.forEach(launcher => fireLauncher(launcher));
         } 
         else if (keys['f']) {
-            // FIRE SELECTED OR NEAREST
             let targetLauncher = null;
-            
-            // Priority 1: Launcher held by mouse
             if (mouseConstraint.body && mouseConstraint.body.customType === 'launcher') {
                 targetLauncher = mouseConstraint.body;
             } 
-            // Priority 2: Closest launcher to mouse cursor
             else if (launchers.length > 0) {
                 let minDist = Infinity;
                 launchers.forEach(l => {
@@ -1115,67 +1094,55 @@
                     }
                 });
             }
-            
-            if (targetLauncher) {
-                fireLauncher(targetLauncher);
-            }
+            if (targetLauncher) fireLauncher(targetLauncher);
         }
 
         ragdolls.forEach(body => {
             if (!body.ai) return;
             const ai = body.ai;
 
-            // 1. FEAR CHECK (Grabbed OR Explosion Panic)
             const isGrabbed = mouseConstraint.body && mouseConstraint.body.groupId === body.groupId;
             
-            // Panic Logic: Run away from fearTarget
             if (ai.state === 'panic') {
                 if (ai.talkText === "" || ai.talkText === "Hmm..." || ai.talkText.includes("Hi")) {
                      const panicLines = ["AHHH!", "RUN!", "HELP!", "WOAH!", "NOOO!", "IT'S OVER!", "YIKES!"];
                      ai.talkText = panicLines[Math.floor(Math.random() * panicLines.length)];
                 }
-                
                 if (ai.fearTarget) {
                     const dx = body.position.x - ai.fearTarget.x;
-                    ai.direction = dx > 0 ? 1 : -1; // Run away from center of blast
+                    ai.direction = dx > 0 ? 1 : -1; 
                 }
-                
-                // Recovery time
                 if (time > ai.nextActionTime) {
                     ai.state = 'walk';
-                    ai.talkText = ""; // Stop screaming
+                    ai.talkText = ""; 
                 }
             }
             else if (isGrabbed) {
                 ai.state = 'scared';
-                // Timid characters panic more
                 if (Math.random() < (ai.personality === 'timid' ? 0.6 : 0.1)) {
                      Body.applyForce(body, body.position, { x: (Math.random()-0.5)*0.02, y: (Math.random()-0.5)*0.02 });
                 }
             } 
             else if (ai.state === 'scared') {
-                ai.state = 'walk'; // Recover immediately if released
+                ai.state = 'walk'; 
             }
 
-            // 2. TIMID PERCEPTION (Scared of fast objects)
             if (ai.personality === 'timid' && ai.state === 'walk') {
                 for (let obj of interactables) {
                     const dist = Vector.magnitude(Vector.sub(body.position, obj.position));
-                    if (dist < 150 && obj.speed > 8) { // If big object is fast and close
+                    if (dist < 150 && obj.speed > 8) { 
                         ai.state = 'panic';
-                        ai.nextActionTime = time + 2000; // Panic for 2 seconds
-                        ai.fearTarget = obj.position; // Run away from object
+                        ai.nextActionTime = time + 2000; 
+                        ai.fearTarget = obj.position; 
                         const timidLines = ["Too fast!", "Scary!", "Stay back!", "Oh my...", "Eek!", "Danger!"];
                         ai.talkText = timidLines[Math.floor(Math.random() * timidLines.length)];
                     }
                 }
             }
 
-            // 3. EXPLORER PERCEPTION (Find interesting objects)
             if (ai.personality === 'explorer' && ai.state === 'walk' && !ai.targetBody && time > ai.nextActionTime) {
-                // Find closest interactable
                 let closest = null;
-                let minDist = 600; // Range
+                let minDist = 600; 
                 for (let obj of interactables) {
                     const dist = Vector.magnitude(Vector.sub(body.position, obj.position));
                     if (dist < minDist) {
@@ -1185,17 +1152,14 @@
                 }
                 if (closest) {
                     ai.targetBody = closest;
-                    ai.nextActionTime = time + 5000; // Interest duration
+                    ai.nextActionTime = time + 5000; 
                 }
             }
             
-            // Explorer Tracking Logic
             if (ai.targetBody && ai.state === 'walk') {
                 if (Composite.allBodies(world).includes(ai.targetBody)) {
                     const dx = ai.targetBody.position.x - body.position.x;
                     ai.direction = dx > 0 ? 1 : -1;
-                    
-                    // Stop chasing if reached or bored
                     if (Math.abs(dx) < 40 || time > ai.nextActionTime) {
                         ai.targetBody = null;
                         const exploreLines = ["Hmm...", "Interesting.", "What is that?", "Shiny...", "Analyzing...", "Curious.", "Nice."];
@@ -1203,40 +1167,28 @@
                         setTimeout(() => ai.talkText = "", 1000);
                     }
                 } else {
-                    ai.targetBody = null; // Object destroyed
+                    ai.targetBody = null; 
                 }
             }
 
-            // NEW: CAR DRIVING BEHAVIOR
-            // 1. Look for a car
             if (ai.state === 'walk' && !ai.vehicle && Math.random() < 0.02) { 
                 const cars = interactables.filter(b => b.customType === 'carBody' && !b.driver);
                 for (let car of cars) {
                     const dist = Vector.magnitude(Vector.sub(body.position, car.position));
                     if (dist < 120) {
-                        // ENTER CAR
                         ai.state = 'driving';
                         ai.vehicle = car;
                         car.driver = body;
                         ai.talkText = Math.random() > 0.5 ? "Road trip!" : "Vroom!";
                         
-                        // Teleport to seat (slightly above center)
                         const seatPos = Vector.add(car.position, {x: 0, y: -20});
                         Body.setPosition(body, seatPos);
-                        Body.setVelocity(body, car.velocity); // Match speed instantly
+                        Body.setVelocity(body, car.velocity); 
                         
-                        // Prevent collision conflict (Simplified: just attach strongly)
-                        // Ideally we'd change collision groups, but stiff constraint works okay
-                        
-                        // Create Seatbelt
                         ai.seatbelt = Constraint.create({
-                            bodyA: car,
-                            bodyB: body,
-                            pointA: {x: 0, y: -15},
-                            pointB: {x: 0, y: 0},
-                            stiffness: 0.1, 
-                            length: 0,
-                            render: { visible: false }
+                            bodyA: car, bodyB: body,
+                            pointA: {x: 0, y: -15}, pointB: {x: 0, y: 0},
+                            stiffness: 0.1, length: 0, render: { visible: false }
                         });
                         Composite.add(world, ai.seatbelt);
                         break;
@@ -1244,9 +1196,7 @@
                 }
             }
             
-            // 2. Drive the car
             if (ai.state === 'driving' && ai.vehicle) {
-                // Safety check: Car destroyed?
                 if (!Composite.allBodies(world).includes(ai.vehicle)) {
                     ai.state = 'walk';
                     ai.vehicle = null;
@@ -1254,7 +1204,6 @@
                     return;
                 }
                 
-                // Change direction occasionally
                 if (time > ai.nextActionTime) {
                     ai.direction = Math.random() > 0.5 ? 1 : -1;
                     ai.nextActionTime = time + 2000 + Math.random() * 3000;
@@ -1262,31 +1211,24 @@
                     else ai.talkText = "";
                 }
                 
-                // Apply torque to wheels
                 if (ai.vehicle.wheels) {
                     ai.vehicle.wheels.forEach(w => {
                         w.torque += 0.25 * w.mass * ai.direction;
                     });
                 }
                 
-                // Force head upright-ish relative to world, so they look around while driving
                 if (body.relatedHead) {
                     Body.setAngle(body.relatedHead, 0); 
                 }
                 
-                return; // Skip walking physics
+                return; 
             }
 
-            // 4. SELF-RIGHTING & WALKING ANIMATION (Updated)
-            
-            // Keep Torso Upright (Stronger balance)
             const angleSpeed = body.angularVelocity;
             const targetAngle = 0;
-            // P-Controller for balance: kP * error - kD * velocity
             const torque = 0.5 * (targetAngle - body.angle) - 2 * angleSpeed;
             body.torque += torque * body.mass;
 
-            // Keep Head Upright
             if (body.relatedHead) {
                 const hAngle = body.relatedHead.angle;
                 const hSpeed = body.relatedHead.angularVelocity;
@@ -1294,34 +1236,29 @@
                 body.relatedHead.torque += hTorque * body.relatedHead.mass;
             }
 
-            // Leg Animation
             if ((ai.state === 'walk' || ai.state === 'panic') && body.legs) {
                 const walkSpeed = ai.state === 'panic' ? 0.015 : 0.008;
-                const stride = 0.8; // Leg swing range
+                const stride = 0.8; 
                 
                 const targetRight = Math.sin(time * walkSpeed) * stride;
                 const targetLeft = Math.sin(time * walkSpeed + Math.PI) * stride;
                 
-                const kLeg = 0.15; // Leg stiffness
+                const kLeg = 0.15; 
                 
-                // Animate Right Leg
                 const rAngle = body.legs.right.angle - body.angle;
                 const rTorque = kLeg * (targetRight - rAngle);
                 body.legs.right.torque += rTorque * body.legs.right.mass;
                 
-                // Animate Left Leg
                 const lAngle = body.legs.left.angle - body.angle;
                 const lTorque = kLeg * (targetLeft - lAngle);
                 body.legs.left.torque += lTorque * body.legs.left.mass;
             }
 
-            // 5. SOCIALIZING (Social Personality Only)
             if (ai.personality === 'social' && ai.state === 'walk' && ai.socialCooldown <= 0) {
                 for (let other of ragdolls) {
                     if (other === body || other.ai.state !== 'walk') continue;
                     const dist = Vector.magnitude(Vector.sub(body.position, other.position));
                     if (dist < 80) {
-                        // Intelligent Conversation
                         const greetings = ["Hi friend!", "Greetings!", "Hello!", "Hey there!", "Nice pixels!", "Physics is fun!", "Don't push me!", "Lovely day!"];
                         const replies = ["Good day!", "Hi!", "Yo!", "Physics rules!", "Indeed!", "Stay safe!", "I'm walking here!", "Cool!"];
                         
@@ -1343,36 +1280,29 @@
                 ai.talkDuration--;
                 if (ai.talkDuration <= 0) {
                     ai.state = 'walk';
-                    ai.direction *= -1; // Part ways
+                    ai.direction *= -1; 
                 }
-                return; // Stop moving to talk
+                return; 
             }
 
             if (ai.socialCooldown > 0) ai.socialCooldown--;
 
-            // 6. MOVEMENT
             if (ai.state === 'walk' || ai.state === 'panic') {
-                // If simple wandering
                 if (ai.state === 'walk' && !ai.targetBody && time > ai.nextActionTime) {
                     if (Math.random() < 0.3) ai.direction *= -1;
                     ai.nextActionTime = time + 2000 + Math.random() * 2000;
                 }
 
-                // Panic Speed vs Walk Speed
                 const speed = ai.state === 'panic' ? 0.005 : 0.0025;
                 Body.applyForce(body, body.position, { x: speed * ai.direction * body.mass, y: 0 });
 
-                // 7. ADVANCED UNSTICKING / PARKOUR
                 if (Math.abs(body.velocity.x) < 0.3) {
                     ai.isStuckCount++;
                     if (ai.isStuckCount > 30) {
-                        // Jump over obstacle
                         Body.applyForce(body, body.position, { x: 0, y: -0.02 * body.mass });
                         if (ai.isStuckCount > 80) {
-                            // If still stuck, turn around
                             ai.direction *= -1;
                             ai.isStuckCount = 0;
-                            // Abandon target if stuck
                             if (ai.targetBody) ai.targetBody = null; 
                         }
                     }
@@ -1383,16 +1313,24 @@
         });
     });
 
-    // --- Debris System ---
-    function createDebris(x, y, color, count = 5) { // OPTIMIZATION: Default count reduced from 8 to 5
+    // --- NEW: VISUAL EFFECTS SYSTEM ---
+    function addShockwave(x, y) {
+        vfx.push({ type: 'shockwave', x: x, y: y, r: 10, opacity: 1.0 });
+    }
+    
+    function addFlash() {
+        vfx.push({ type: 'flash', opacity: 0.6 });
+    }
+    
+    function createDebris(x, y, color, count = 5) { 
         const particles = [];
         for (let i = 0; i < count; i++) {
-            const size = 5 + Math.random() * 6; // Slightly smaller debris
+            const size = 5 + Math.random() * 6; 
             const particle = Bodies.polygon(x, y, 3 + Math.floor(Math.random() * 2), size, {
                 render: { fillStyle: color },
                 friction: 0.5,
                 restitution: 0.5,
-                frictionAir: 0.08 // OPTIMIZATION: Higher drag so they stop calculating physics sooner
+                frictionAir: 0.08 
             });
             const force = {
                 x: (Math.random() - 0.5) * 0.02,
@@ -1402,8 +1340,21 @@
             particles.push(particle);
         }
         Composite.add(world, particles);
-        // OPTIMIZATION: Remove debris faster (1000ms instead of 1500ms)
         setTimeout(() => Composite.remove(world, particles), 1000);
+    }
+    
+    function createSparks(x, y, count = 3) {
+         for (let i=0; i<count; i++) {
+             vfx.push({
+                 type: 'spark',
+                 x: x,
+                 y: y,
+                 vx: (Math.random() - 0.5) * 10,
+                 vy: (Math.random() - 0.5) * 10,
+                 life: 15,
+                 color: Math.random() > 0.5 ? '#fde047' : '#ffffff' // Yellow/White
+             });
+         }
     }
 
     // --- Custom Texture Renderer ---
@@ -1412,8 +1363,41 @@
         const bodies = Composite.allBodies(world);
         const time = engine.timing.timestamp;
 
+        // --- DRAW VFX (On top) ---
+        for (let i = vfx.length - 1; i >= 0; i--) {
+            const e = vfx[i];
+            
+            if (e.type === 'shockwave') {
+                e.r += 15;
+                e.opacity -= 0.05;
+                if (e.opacity <= 0) { vfx.splice(i, 1); continue; }
+                
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${e.opacity})`;
+                ctx.lineWidth = 10 * e.opacity;
+                ctx.stroke();
+            } 
+            else if (e.type === 'flash') {
+                e.opacity -= 0.1;
+                if (e.opacity <= 0) { vfx.splice(i, 1); continue; }
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${e.opacity})`;
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            }
+            else if (e.type === 'spark') {
+                e.x += e.vx;
+                e.y += e.vy;
+                e.vy += 0.5; // Gravity
+                e.life--;
+                if (e.life <= 0) { vfx.splice(i, 1); continue; }
+                
+                ctx.fillStyle = e.color;
+                ctx.fillRect(e.x, e.y, 2, 2);
+            }
+        }
+
         // --- FPS COUNTER LOGIC ---
-        // We use a closure-like structure here for variables or global scope
         if (!window.fpsFrameCount) {
             window.fpsFrameCount = 0;
             window.fpsLastTime = performance.now();
@@ -1429,51 +1413,35 @@
             window.fpsLastTime = now;
         }
 
-        // --- NEW: ITEM COUNTER LOGIC ---
         const itemElem = document.getElementById('item-counter');
-        if (itemElem && window.fpsFrameCount % 10 === 0) { // Update periodically
+        if (itemElem && window.fpsFrameCount % 10 === 0) { 
              const count = Composite.allBodies(world).filter(b => !b.isStatic).length;
              itemElem.innerText = 'Items: ' + count;
         }
         
-        // --- NEW: Draw Projectile Trails ---
-        // We do this loop separately or integrate it. 
-        // Let's iterate bodies once to keep it efficient, but we need to draw trails underneath objects ideally?
-        // Canvas draws in order, so drawing trails here puts them ON TOP. 
-        // To draw BEHIND, we'd need to use 'beforeRender', but 'beforeRender' clears the canvas.
-        // Drawing on top is fine for glowing energy bolts.
-
         for (let i = 0; i < bodies.length; i += 1) {
             const body = bodies[i];
 
-            // Update Trail Data
             if (body.entityType === 'projectile') {
                 if (!body.trail) body.trail = [];
-                // Add current position
                 body.trail.push({ x: body.position.x, y: body.position.y });
-                // Limit trail length
                 if (body.trail.length > 20) body.trail.shift();
 
-                // Draw Trail
                 if (body.trail.length > 1) {
                     ctx.beginPath();
                     ctx.moveTo(body.trail[0].x, body.trail[0].y);
                     for (let j = 1; j < body.trail.length; j++) {
                         ctx.lineTo(body.trail[j].x, body.trail[j].y);
                     }
-                    // Glow effect
                     ctx.shadowBlur = 10;
                     ctx.shadowColor = '#ef4444';
                     ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
                     ctx.lineWidth = 4;
                     ctx.stroke();
                     
-                    // Core
                     ctx.strokeStyle = 'rgba(255, 200, 200, 0.8)';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-                    
-                    // Reset shadow for other objects
                     ctx.shadowBlur = 0;
                 }
             }
@@ -1485,7 +1453,6 @@
             ctx.translate(x, y);
             ctx.rotate(angle);
 
-            // Crate
             if (body.customType === 'crate') {
                 const w = body.bounds.max.x - body.bounds.min.x;
                 const h = body.bounds.max.y - body.bounds.min.y;
@@ -1497,12 +1464,10 @@
                 ctx.moveTo(w/2 - 4, -h/2 + 4); ctx.lineTo(-w/2 + 4, h/2 - 4);
                 ctx.stroke();
             }
-            // Heavy Metal Block
             if (body.customType === 'heavyBlock') {
                 const w = body.bounds.max.x - body.bounds.min.x;
                 const h = body.bounds.max.y - body.bounds.min.y;
                 
-                // Metallic Sheen (Diagonal reflection)
                 ctx.fillStyle = 'rgba(255,255,255,0.15)';
                 ctx.beginPath();
                 ctx.moveTo(-w/2, -h/2 + 20);
@@ -1511,7 +1476,6 @@
                 ctx.lineTo(w/2 - 20, h/2);
                 ctx.fill();
 
-                // Rivets in corners
                 ctx.fillStyle = '#334155';
                 const inset = 8;
                 const rivetSize = 3;
@@ -1526,28 +1490,23 @@
                     ctx.beginPath();
                     ctx.arc(pos.x, pos.y, rivetSize, 0, 2 * Math.PI);
                     ctx.fill();
-                    // Highlight on rivet
                     ctx.strokeStyle = 'rgba(255,255,255,0.3)';
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 });
                 
-                // Heavy Border
                 ctx.strokeStyle = '#475569';
                 ctx.lineWidth = 3;
                 ctx.strokeRect(-w/2, -h/2, w, h);
             }
-            // Black Hole Visuals
             if (body.customType === 'blackhole') {
                 const r = body.circleRadius;
                 
-                // Pulsing Accretion Disk
                 const pulse = Math.sin(time * 0.005) * 0.1 + 1;
                 const pulse2 = Math.cos(time * 0.008) * 0.1 + 1;
 
-                // Outer Glow (Purple)
                 const gradient = ctx.createRadialGradient(0, 0, r, 0, 0, r * 3 * pulse);
-                gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)'); // Violet
+                gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)'); 
                 gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
                 
                 ctx.fillStyle = gradient;
@@ -1555,38 +1514,30 @@
                 ctx.arc(0, 0, r * 3 * pulse, 0, 2 * Math.PI);
                 ctx.fill();
 
-                // Inner Ring (White/Blue)
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(0, 0, r + (5 * pulse2), 0, 2 * Math.PI);
                 ctx.stroke();
 
-                // The Void (Black)
                 ctx.fillStyle = '#000';
                 ctx.beginPath();
                 ctx.arc(0, 0, r, 0, 2 * Math.PI);
                 ctx.fill();
             }
-            // Water (Real-Life Liquid Rendering)
             if (body.customType === 'water') {
                 const r = body.circleRadius;
                 
-                // 1. Draw Larger Body (Overlap Effect)
-                // We draw the circle 1.3x larger than its physics body.
-                // This makes the particles visually merge into a blob.
                 ctx.fillStyle = 'rgba(56, 189, 248, 0.55)';
                 ctx.beginPath();
                 ctx.arc(0, 0, r * 1.3, 0, 2 * Math.PI);
                 ctx.fill();
 
-                // 2. Liquid Highlight (Glint)
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
                 ctx.beginPath();
                 ctx.arc(-r * 0.3, -r * 0.3, r * 0.5, 0, 2 * Math.PI);
                 ctx.fill();
             }
-            // Wheel
             if (body.customType === 'wheel') {
                 const r = body.circleRadius;
                 ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
@@ -1597,37 +1548,30 @@
                 ctx.moveTo(-r+2, 0); ctx.lineTo(r-2, 0);
                 ctx.stroke();
             }
-            // Car Body
             if (body.customType === 'carBody') {
                 ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-10, 10); ctx.stroke();
                 ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.rect(40, -5, 5, 10); ctx.fill();
                 ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.rect(-48, -5, 5, 10); ctx.fill();
             }
-            // Launcher
             if (body.customType === 'launcher') {
-                // Barrel stripes
                 ctx.fillStyle = '#ef4444'; 
                 ctx.beginPath(); 
                 ctx.rect(10, -10, 5, 20); 
                 ctx.fill();
-                // Sight
                 ctx.fillStyle = '#ef4444';
                 ctx.beginPath();
                 ctx.rect(25, -12, 4, 4);
                 ctx.fill();
             }
-            // Face
             if (body.customType === 'face') {
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 
                 let state = 'walk';
-                // SAFE GUARD: Check AI existence before accessing
                 if (body.relatedTorso && body.relatedTorso.ai) {
                     state = body.relatedTorso.ai.state;
                 }
 
-                // Eyes
                 ctx.beginPath();
                 if (state === 'scared' || state === 'panic') {
                     ctx.fillStyle = 'white';
@@ -1639,23 +1583,21 @@
                     ctx.arc(-4, -2, 1.5, 0, 2 * Math.PI); ctx.arc(4, -2, 1.5, 0, 2 * Math.PI); ctx.fill();
                 }
 
-                // Mouth
                 ctx.beginPath();
                 ctx.strokeStyle = 'rgba(0,0,0,0.6)';
                 ctx.lineWidth = 1;
                 if (state === 'scared' || state === 'panic') {
-                    ctx.ellipse(0, 3, 2, 3, 0, 0, 2 * Math.PI); // 'O' mouth
+                    ctx.ellipse(0, 3, 2, 3, 0, 0, 2 * Math.PI); 
                     ctx.stroke();
                 } else if (state === 'talk') {
                     ctx.moveTo(-2, 3); ctx.lineTo(2, 3);
                     ctx.stroke();
                 } else {
-                    ctx.arc(0, 2, 5, 0.2, Math.PI - 0.2); // Smile
+                    ctx.arc(0, 2, 5, 0.2, Math.PI - 0.2); 
                     ctx.stroke();
                 }
             }
 
-            // Damage Overlay
             if (body.isTarget && body.tapCount > 0) {
                 const health = body.tapCount;
                 ctx.globalAlpha = health * 0.2;
@@ -1669,9 +1611,7 @@
             ctx.rotate(-angle);
             ctx.translate(-x, -y);
 
-            // --- Draw Speech Bubbles (Fixed Safety Check & Dynamic Sizing) ---
             if (body.customType === 'face' && body.relatedTorso && body.relatedTorso.ai) {
-                // Show text if 'talk' OR 'panic'
                 const ai = body.relatedTorso.ai;
                 if (ai.state === 'talk' || ai.state === 'panic') {
                     const text = ai.talkText || "";
@@ -1710,7 +1650,6 @@
             }
         }
         
-        // --- SLOW MOTION INDICATOR ---
         if (isSlowMotion) {
             ctx.save();
             ctx.font = '900 24px "Segoe UI", sans-serif';
@@ -1751,22 +1690,14 @@
 
     let dragDistance = 0;
     
-    // UPDATED: Mousedown handler for Delete Tool
     Events.on(mouseConstraint, 'mousedown', () => { 
         dragDistance = 0; 
         
-        // DELETE TOOL LOGIC
         if (currentSpawnType === 'delete') {
             const body = mouseConstraint.body;
-            // Delete if it's a valid body and not a wall (isStatic)
             if (body && !body.isStatic) {
-                // Remove the body
                 Composite.remove(world, body);
-                
-                // Visual Effect (Poof)
                 createDebris(body.position.x, body.position.y, body.render.fillStyle || '#fff', 5);
-                
-                // Release from mouse constraint so it doesn't try to drag a ghost
                 mouseConstraint.body = null;
             }
         }
@@ -1775,17 +1706,16 @@
     Events.on(mouseConstraint, 'mousemove', () => { if (mouseConstraint.body) dragDistance++; });
     Events.on(mouseConstraint, 'mouseup', () => {
         const body = mouseConstraint.body;
-        // Only tap/explode if NOT in delete mode
         if (currentSpawnType !== 'delete' && body && body.isTarget && dragDistance < 12) {
             handleTap(body);
         }
     });
 
-    // --- Hard Collision Detection ---
+    // --- Hard Collision Detection (Updated for Sound) ---
     Events.on(engine, 'collisionStart', (event) => {
         const pairs = event.pairs;
         const now = Date.now();
-        const IMPACT_THRESHOLD = 24; 
+        const IMPACT_THRESHOLD = 8; 
         
         for (let i = 0; i < pairs.length; i++) {
             const pair = pairs[i];
@@ -1793,39 +1723,51 @@
             const bodyB = pair.bodyB;
 
             // --- PROJECTILE LOGIC ---
-            // Check if one of the bodies is a projectile from the blaster
             if (bodyA.entityType === 'projectile' || bodyB.entityType === 'projectile') {
                 const projectile = bodyA.entityType === 'projectile' ? bodyA : bodyB;
                 const target = bodyA === projectile ? bodyB : bodyA;
 
-                // SPECIAL CASE: Black Hole eats projectiles silently (and grows)
                 if (target.customType === 'blackhole') {
-                    // Grow slightly from bullets
                     const growth = 1.01;
                     Body.scale(target, growth, growth);
                     target.circleRadius *= growth;
-
                     Composite.remove(world, projectile);
                     continue;
                 }
 
-                // If the target is a valid destructible object (not a wall and not a black hole)
                 if (target.isTarget && !target.isStatic && !target.isExploding && target.customType !== 'blackhole') {
-                    // Trigger explosion on the target
                     triggerExplosion(target);
-                    
-                    // Destroy the projectile itself (and make a little debris pop)
                     Composite.remove(world, projectile);
                     createDebris(projectile.position.x, projectile.position.y, '#ef4444', 3);
-                    
-                    continue; // Skip standard collision check for this pair
+                    continue; 
                 }
             }
 
             const relativeMotion = Vector.sub(bodyA.velocity, bodyB.velocity);
             const speed = Vector.magnitude(relativeMotion);
 
-            if (speed > IMPACT_THRESHOLD) {
+            // --- NEW: IMPACT SOUNDS & SPARKS ---
+            if (speed > 1.5) {
+                // Determine material type
+                let type = 'wood';
+                if (bodyA.customType === 'heavyBlock' || bodyB.customType === 'heavyBlock' || 
+                    bodyA.customType === 'carBody' || bodyB.customType === 'carBody' ||
+                    bodyA.customType === 'launcher' || bodyB.customType === 'launcher') {
+                    type = 'metal';
+                }
+                
+                playImpactSound(speed, type);
+
+                // Create Sparks for Metal-on-Metal or High Speed Metal
+                if (type === 'metal' && speed > 5) {
+                    const contact = pair.contacts[0];
+                    if (contact) {
+                        createSparks(contact.vertex.x, contact.vertex.y, Math.floor(speed / 2));
+                    }
+                }
+            }
+
+            if (speed > 24) {
                 if (bodyA.isTarget && !bodyA.isExploding && now - (bodyA.createdAt || 0) > 1000) {
                     triggerExplosion(bodyA);
                 }
@@ -1837,31 +1779,24 @@
     });
 
     window.addEventListener('keydown', (e) => {
-        // Toggle Menu on ESC
         if (e.key === 'Escape') {
             togglePause();
             return;
         }
 
-        // Toggle GUI on M
         if (e.key.toLowerCase() === 'm') {
             document.body.classList.toggle('gui-hidden');
         }
 
-        // Only allow game controls if game is running
         if (!isGameRunning) return;
 
-        // Toggle Slow Motion on T
         if (e.key.toLowerCase() === 't') {
             isSlowMotion = !isSlowMotion;
             engine.timing.timeScale = isSlowMotion ? 0.2 : 1.0;
-            // Adjust audio playback rate? (Optional polish: pitch shift sounds)
         }
 
-        // SPAWN OR DELETE SELECTED ITEM
         if (e.key.toLowerCase() === 'e') {
             if (currentSpawnType === 'delete') {
-                // Query physics world for body under mouse
                 const bodies = Composite.allBodies(world);
                 const found = Matter.Query.point(bodies, mouse.position);
                 if (found.length > 0) {
@@ -1872,12 +1807,10 @@
                     }
                 }
             } else {
-                // MULTI-SPAWN LOGIC
                 const countSlider = document.getElementById('count-slider');
                 const count = parseInt(countSlider.value);
                 
                 for (let i = 0; i < count; i++) {
-                    // Add jitter if spawning multiple so they don't overlap perfectly
                     const jitter = count > 1 ? 50 : 0; 
                     const offX = (Math.random() - 0.5) * jitter;
                     const offY = (Math.random() - 0.5) * jitter;
@@ -1888,30 +1821,30 @@
         }
         
         if (e.key === '2') clearAllShapes();
+
+        if (e.key === '3') {
+             const targets = Composite.allBodies(world).filter(b => b.isTarget && !b.isStatic && !b.isExploding);
+             targets.forEach(body => triggerExplosion(body));
+        }
         
-        // --- LAUNCHER FIRING ---
         if (e.key.toLowerCase() === 'f') {
             const bodies = Composite.allBodies(world);
             const launcher = bodies.find(b => b.customType === 'launcher');
             
             if (launcher) {
-                // Fire!
                 playShootSound();
                 
-                // Calculate barrel position
                 const len = 35;
                 const angle = launcher.angle;
                 const barrelX = launcher.position.x + Math.cos(angle) * len;
                 const barrelY = launcher.position.y + Math.sin(angle) * len;
                 
-                // Create Projectile
                 const projectile = Bodies.circle(barrelX, barrelY, 6, {
                     density: 0.05,
                     restitution: 0.5,
                     render: { fillStyle: '#ef4444' }
                 });
                 
-                // Add velocity
                 const force = 0.05;
                 Body.applyForce(projectile, projectile.position, {
                     x: Math.cos(angle) * force,
@@ -1920,13 +1853,11 @@
                 
                 projectile.isTarget = true; 
                 projectile.tapCount = 5; 
-                // IMPORTANT: Assign unique group ID to prevent wall destruction
                 projectile.groupId = Math.random().toString(36).substr(2, 9);
                 projectile.entityType = 'projectile';
                 
                 Composite.add(world, projectile);
                 
-                // Recoil
                 Body.applyForce(launcher, launcher.position, {
                     x: -Math.cos(angle) * 0.05,
                     y: -Math.sin(angle) * 0.05
@@ -1938,18 +1869,15 @@
     const gravitySlider = document.getElementById('gravity-slider');
     const gravityVal = document.getElementById('gravity-val');
 
-    // --- ZERO GRAVITY FRICTION LOGIC ---
     function updateFriction(isZeroG) {
         const bodies = Composite.allBodies(world);
         bodies.forEach(body => {
             if (isZeroG) {
-                // Save original friction if we haven't yet
                 if (typeof body.originalFrictionAir === 'undefined') {
                     body.originalFrictionAir = body.frictionAir;
                 }
-                body.frictionAir = 0; // Frictionless in vacuum
+                body.frictionAir = 0; 
             } else {
-                // Restore original friction if available
                 if (typeof body.originalFrictionAir !== 'undefined') {
                     body.frictionAir = body.originalFrictionAir;
                 }
@@ -1961,12 +1889,9 @@
         const val = parseFloat(e.target.value);
         engine.gravity.y = val;
         gravityVal.innerText = val.toFixed(1);
-        
-        // If gravity is 0, disable air resistance
         updateFriction(val === 0);
     });
 
-    // Apply zero friction to NEW objects if spawned during zero G
     Events.on(world, 'afterAdd', (event) => {
         if (engine.gravity.y === 0) {
             const objects = Array.isArray(event.object) ? event.object : [event.object];
@@ -1981,7 +1906,6 @@
         }
     });
 
-    // NEW: Spawn Size Slider Logic
     const sizeSlider = document.getElementById('size-slider');
     const sizeVal = document.getElementById('size-val');
     sizeSlider.addEventListener('input', (e) => {
@@ -1989,20 +1913,18 @@
         sizeVal.innerText = spawnScale.toFixed(1) + 'x';
     });
 
-    // NEW: Spawn Count Slider Logic
     const countSlider = document.getElementById('count-slider');
     const countVal = document.getElementById('count-val');
     countSlider.addEventListener('input', (e) => {
         countVal.innerText = e.target.value;
     });
 
-    // NEW: FPS Slider Logic
     const fpsSlider = document.getElementById('fps-slider');
     const fpsVal = document.getElementById('fps-val');
     fpsSlider.addEventListener('input', (e) => {
         const val = parseInt(e.target.value);
         if (val >= 150) {
-            targetFPS = 999; // Treat as unlimited
+            targetFPS = 999; 
             fpsVal.innerText = "MAX";
             frameInterval = 0;
         } else {
@@ -2012,7 +1934,22 @@
         }
     });
 
-    // NEW: Toggle for Anti-Lag Item Limit
+    // NEW: Explosion Power Slider Logic
+    const powerSlider = document.getElementById('power-slider');
+    const powerVal = document.getElementById('power-val');
+    powerSlider.addEventListener('input', (e) => {
+        explosionPower = parseFloat(e.target.value);
+        powerVal.innerText = explosionPower.toFixed(1) + 'x';
+    });
+
+    // NEW: Explosion Range Slider Logic
+    const rangeSlider = document.getElementById('range-slider');
+    const rangeVal = document.getElementById('range-val');
+    rangeSlider.addEventListener('input', (e) => {
+        explosionRange = parseInt(e.target.value);
+        rangeVal.innerText = explosionRange;
+    });
+
     let isLimitActive = true;
     const limitToggle = document.getElementById('limit-toggle');
     limitToggle.addEventListener('change', (e) => {
@@ -2040,16 +1977,21 @@
     function triggerExplosion(sourceBody) {
         if (sourceBody.isExploding) return;
         
-        // --- SAFETY CHECK: Never explode walls, undefined groups, BLACK HOLES, or WATER ---
-        // Added water check so liquid doesn't blow up
         if (sourceBody.isStatic || !sourceBody.groupId || sourceBody.customType === 'blackhole' || sourceBody.entityType === 'blackhole' || sourceBody.customType === 'water') return;
 
-        // --- Play Sound ---
         playExplosionSound();
+        
+        // ADD VFX
+        addShockwave(sourceBody.position.x, sourceBody.position.y);
+        addFlash();
+        
+        // UPDATED: Dynamic Screen Shake Calculation
+        // Shake scales with Power and Range
+        // Base: ~20. Max Power (30) + Max Range (1500) -> ~80 shake intensity
+        shakeIntensity = (explosionPower * 1.5) + (explosionRange / 40); 
 
         const groupId = sourceBody.groupId;
         const allBodies = Composite.allBodies(world);
-        // Ensure we only grab dynamic bodies with the matching group ID
         const groupBodies = allBodies.filter(b => b.groupId === groupId && !b.isStatic);
         
         groupBodies.forEach(b => b.isExploding = true);
@@ -2058,18 +2000,19 @@
         const color = sourceBody.render.fillStyle;
         const spawnType = sourceBody.entityType; 
 
+        // Flash Background
         render.options.background = '#e2e8f0';
         setTimeout(() => render.options.background = '#0f172a', 60);
 
-        // --- PANIC NEARBY AI ---
         const ragdolls = allBodies.filter(b => b.customType === 'ragdoll');
         ragdolls.forEach(ragdoll => {
             if (ragdoll.ai && !ragdoll.isExploding) {
                 const dist = Vector.magnitude(Vector.sub(ragdoll.position, pos));
-                if (dist < 400) {
+                // UPDATED: Panic range scales with explosion range
+                if (dist < explosionRange * 0.8) {
                     ragdoll.ai.state = 'panic';
                     ragdoll.ai.fearTarget = pos;
-                    ragdoll.ai.nextActionTime = Date.now() + 2500; // Panic for 2.5s
+                    ragdoll.ai.nextActionTime = Date.now() + 2500; 
                 }
             }
         });
@@ -2078,8 +2021,12 @@
             if (body.isStatic || body.groupId === groupId) return; 
             const distVec = Vector.sub(body.position, pos);
             const dist = Vector.magnitude(distVec);
-            if (dist < 600) {
-                const force = Vector.mult(Vector.normalise(distVec), 0.3 * Math.pow((600 - dist) / 600, 2) * body.mass);
+            
+            // UPDATED: Use dynamic range and power
+            if (dist < explosionRange) {
+                // 0.3 base force * power multiplier * falloff based on new range
+                const forceMag = 0.3 * explosionPower * Math.pow((explosionRange - dist) / explosionRange, 2);
+                const force = Vector.mult(Vector.normalise(distVec), forceMag * body.mass);
                 Body.applyForce(body, body.position, force);
                 Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.5);
             }
@@ -2102,19 +2049,16 @@
             mouseConstraint.body = null;
         }
 
-        // Only respawn if it's a known spawn type (projectiles don't respawn)
         if (spawnType && spawnType !== 'projectile' && !respawnQueue.has(groupId)) {
             respawnQueue.add(groupId);
             setTimeout(() => {
                 const respawnX = Math.max(50, Math.min(window.innerWidth - 50, pos.x));
-                // Respawn on the ground instead of the air
                 spawnEntity(spawnType, respawnX, window.innerHeight - 150);
                 respawnQueue.delete(groupId); 
             }, 1000);
         }
     }
 
-    // --- Initial Population (Restored) ---
     for (let i = 0; i < 4; i++) {
         spawnEntity('block');
         spawnEntity('person');
@@ -2131,6 +2075,92 @@
     window.spawnEntity = spawnEntity;
     window.selectAndSpawn = selectAndSpawn;
     window.clearAllShapes = clearAllShapes;
+
+    // --- NEW: EDITABLE VALUES HELPER ---
+    function setupEditable(spanId, sliderId, suffix, callback) {
+        const span = document.getElementById(spanId);
+        const slider = document.getElementById(sliderId);
+        
+        span.classList.add('editable-val');
+        span.title = "Click to edit value";
+
+        span.addEventListener('click', (e) => {
+            if (span.querySelector('input')) return;
+            
+            const text = span.innerText.replace(suffix, '').replace('MAX', '150');
+            const oldVal = parseFloat(text);
+            
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = oldVal;
+            input.className = 'value-input';
+            
+            input.addEventListener('click', (e) => e.stopPropagation());
+            
+            const save = () => {
+                let newVal = parseFloat(input.value);
+                if (isNaN(newVal)) newVal = oldVal;
+                
+                // Allow extending slider range if user inputs big number
+                if (newVal > parseFloat(slider.max)) slider.max = newVal;
+                if (newVal < parseFloat(slider.min)) slider.min = newVal;
+                
+                slider.value = newVal;
+                
+                // Run specific update logic
+                callback(newVal);
+                
+                // Restore text
+                if (sliderId === 'fps-slider' && newVal >= 150) {
+                    span.innerText = "MAX";
+                } else {
+                    if (newVal % 1 !== 0) span.innerText = newVal.toFixed(1) + suffix;
+                    else span.innerText = newVal + suffix;
+                }
+            };
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') input.blur();
+            });
+
+            span.innerText = '';
+            span.appendChild(input);
+            input.focus();
+        });
+    }
+
+    // --- SETUP EDITABLE VALUES ---
+    setupEditable('gravity-val', 'gravity-slider', '', (val) => {
+        engine.gravity.y = val; 
+        updateFriction(val === 0);
+    });
+
+    setupEditable('size-val', 'size-slider', 'x', (val) => {
+        spawnScale = val;
+    });
+
+    setupEditable('count-val', 'count-slider', '', (val) => {
+        // Slider value already updated in helper
+    });
+
+    setupEditable('fps-val', 'fps-slider', '', (val) => {
+        if (val >= 150) {
+            targetFPS = 999;
+            frameInterval = 0;
+        } else {
+            targetFPS = val;
+            frameInterval = 1000 / targetFPS;
+        }
+    });
+
+    setupEditable('power-val', 'power-slider', 'x', (val) => {
+        explosionPower = val;
+    });
+
+    setupEditable('range-val', 'range-slider', '', (val) => {
+        explosionRange = val;
+    });
 
 </script>
 </body>
