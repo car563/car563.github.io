@@ -149,6 +149,16 @@
             font-weight: bold;
         }
 
+        /* NEW: Version Text Style */
+        .version-text {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
         /* Hide game UI when menu is open */
         body.menu-active #ui-left,
         body.menu-active #fps-counter,
@@ -353,6 +363,7 @@
     <button class="play-btn" onclick="togglePause()">PLAY</button>
     <div class="menu-hint">Press <b>ESC</b> to Pause / Resume</div>
     <div class="crash-warning">Dont get mad at me if you're PC crashes!</div>
+    <div class="version-text">v2.1 Pro</div>
 </div>
 
 <!-- NEW: FPS Counter Element -->
@@ -441,8 +452,15 @@
         <div class="spawn-grid">
             <button class="spawn-btn" onclick="selectAndSpawn('block')">📦 Crate</button>
             <button class="spawn-btn" onclick="selectAndSpawn('heavy')">🪨 Heavy Metal</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('tnt')">🧨 TNT</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('ice')">🧊 Ice</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('balloon')">🎈 Balloon</button> <!-- NEW -->
+            <button class="spawn-btn" onclick="selectAndSpawn('bouncy')">🎾 Bouncy Ball</button> <!-- NEW -->
+            <button class="spawn-btn" onclick="selectAndSpawn('hexagon')">🛑 Hexagon</button> <!-- NEW -->
             <button class="spawn-btn" onclick="selectAndSpawn('blackhole')">⚫ Black Hole</button>
             <button class="spawn-btn" onclick="selectAndSpawn('ball')">🎱 Sphere</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('triangle')">🔺 Triangle</button>
+            <button class="spawn-btn" onclick="selectAndSpawn('domino')">🧱 Domino</button>
             <button class="spawn-btn" onclick="selectAndSpawn('water')">💧 Water</button>
             <button class="spawn-btn" onclick="selectAndSpawn('car')">🏎️ Sport Car</button>
             <button class="spawn-btn" onclick="selectAndSpawn('person')">🏃 Ragdoll (AI)</button>
@@ -486,26 +504,41 @@
             const osc2 = audioCtx.createOscillator();
             const modGain = audioCtx.createGain();
             
-            // Higher base pitch for "Steel" (800Hz range)
             const baseFreq = 800 + Math.random() * 400;
             
-            osc1.type = 'sine'; // Carrier: Sine gives a clean "ring"
+            osc1.type = 'sine'; 
             osc1.frequency.setValueAtTime(baseFreq, t);
             
-            osc2.type = 'square'; // Modulator: Square adds harsh metallic harmonics
-            osc2.frequency.setValueAtTime(baseFreq * 1.4, t); // Inharmonic ratio
+            osc2.type = 'square'; 
+            osc2.frequency.setValueAtTime(baseFreq * 1.4, t); 
             
-            // Modulation Depth (The "Clang")
             modGain.gain.setValueAtTime(1000, t); 
-            modGain.gain.exponentialRampToValueAtTime(10, t + 0.3); // Sharp attack fades to pure ring
+            modGain.gain.exponentialRampToValueAtTime(10, t + 0.3); 
             
             osc2.connect(modGain);
             modGain.connect(osc1.frequency);
             osc1.connect(gain);
             
             osc1.start(t); osc2.start(t);
-            osc1.stop(t + 0.5); osc2.stop(t + 0.5); // Longer ring for steel
-        } else {
+            osc1.stop(t + 0.5); osc2.stop(t + 0.5); 
+        } 
+        else if (type === 'ice') {
+            // NEW: ICE TINKLE SOUND
+            // High pitched sine waves for crystalline sound
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            // Random high pitch (2000Hz - 4000Hz)
+            osc.frequency.setValueAtTime(2000 + Math.random() * 2000, t);
+            
+            // Shorter envelope for glass/ice click
+            gain.gain.setValueAtTime(vol * 0.6, t); 
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            
+            osc.connect(gain);
+            osc.start(t);
+            osc.stop(t + 0.1);
+        }
+        else {
             // WOOD/DEFAULT THUD (Filtered Noise)
             const bufferSize = audioCtx.sampleRate * 0.1;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -517,7 +550,6 @@
             
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'lowpass';
-            // Harder hits = Brighter sound
             filter.frequency.setValueAtTime(200 + (speed * 50), t);
             filter.Q.value = 1;
 
@@ -780,7 +812,103 @@
                 Object.assign(b, commonProps);
                 b.customType = 'crate';
                 Composite.add(world, b);
-            } 
+            }
+            // NEW: Balloon Logic
+            else if (type === 'balloon') {
+                const r = 25 * s;
+                const b = Bodies.circle(posX, posY, r, {
+                    render: { fillStyle: '#ef4444' }, // Red balloon default
+                    frictionAir: 0.05 * dragScale, // High drag
+                    density: 0.0005, // Very light
+                    restitution: 0.5
+                });
+                Object.assign(b, commonProps);
+                b.render.fillStyle = palette[Math.floor(Math.random() * palette.length)]; // Random color
+                b.customType = 'balloon';
+                Composite.add(world, b);
+            }
+            // NEW: Bouncy Ball Logic
+            else if (type === 'bouncy') {
+                const r = 20 * s;
+                const b = Bodies.circle(posX, posY, r, {
+                    render: { fillStyle: '#a3e635' }, // Lime green
+                    restitution: 1.1, // Super bouncy (>1 adds energy!)
+                    friction: 0.5,
+                    density: 0.002 * densityScale
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'bouncy';
+                Composite.add(world, b);
+            }
+            // NEW: Hexagon Logic
+            else if (type === 'hexagon') {
+                const size = 35 * s; // Radius
+                const b = Bodies.polygon(posX, posY, 6, size, {
+                    render: { fillStyle: color },
+                    chamfer: { radius: 2 * s },
+                    restitution: 0.3,
+                    friction: 0.5,
+                    density: 0.001 * densityScale
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'hexagon';
+                Composite.add(world, b);
+            }
+            // NEW: TNT Logic
+            else if (type === 'tnt') {
+                const size = 50 * s;
+                const b = Bodies.rectangle(posX, posY, size, size, {
+                    render: { fillStyle: '#ef4444' },
+                    density: 0.001 * densityScale,
+                    frictionAir: 0.01 * dragScale
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'tnt';
+                Composite.add(world, b);
+            }
+            // NEW: Ice Logic
+            else if (type === 'ice') {
+                const size = 60 * s;
+                const b = Bodies.rectangle(posX, posY, size, size, {
+                    render: { fillStyle: '#cffafe' }, // Light Cyan
+                    friction: 0.0,       // No friction
+                    frictionStatic: 0.0,
+                    restitution: 0.1,
+                    density: 0.0009 * densityScale, // Slightly lighter
+                    frictionAir: 0.005 * dragScale
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'ice';
+                Composite.add(world, b);
+            }
+            // NEW: Triangle Logic
+            else if (type === 'triangle') {
+                const size = 50 * s;
+                const b = Bodies.polygon(posX, posY, 3, size, {
+                    render: { fillStyle: color },
+                    restitution: 0.5,
+                    density: 0.001 * densityScale,
+                    frictionAir: 0.01 * dragScale
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'triangle';
+                Composite.add(world, b);
+            }
+            // NEW: Domino Logic
+            else if (type === 'domino') {
+                const width = 15 * s;
+                const height = 90 * s;
+                const b = Bodies.rectangle(posX, posY, width, height, {
+                    render: { fillStyle: '#cbd5e1' },
+                    chamfer: { radius: 2 * s },
+                    density: 0.002 * densityScale, // Heavy enough to stand
+                    friction: 0.5,
+                    frictionAir: 0.01 * dragScale
+                });
+                Object.assign(b, commonProps);
+                b.customType = 'domino';
+                Composite.add(world, b);
+            }
             else if (type === 'heavy') {
                 const size = 60 * s;
                 const b = Bodies.rectangle(posX, posY, size, size, { 
@@ -1029,35 +1157,45 @@
         }
 
         const ragdolls = bodies.filter(b => b.customType === 'ragdoll');
-        const interactables = bodies.filter(b => b.customType === 'crate' || b.customType === 'sphere' || b.customType === 'carBody');
+        // UPDATED: Interactables now include ALL dynamic types
+        const interactables = bodies.filter(b => 
+            ['crate', 'sphere', 'carBody', 'tnt', 'ice', 'balloon', 'bouncy', 'hexagon', 'triangle', 'domino'].includes(b.customType)
+        );
         const launchers = bodies.filter(b => b.customType === 'launcher');
         const blackholes = bodies.filter(b => b.customType === 'blackhole');
+        const balloons = bodies.filter(b => b.customType === 'balloon');
+
+        // NEW: Balloon Physics (Anti-Gravity)
+        balloons.forEach(b => {
+            const gravity = engine.world.gravity;
+            Body.applyForce(b, b.position, {
+                x: 0,
+                y: -b.mass * gravity.y * gravity.scale * 1.8 
+            });
+        });
 
         if (keys['arrowright'] || keys['d']) {
-            // Drive Cars
             bodies.forEach(b => {
                 if (b.customType === 'wheel') {
                     b.torque += 0.3 * b.mass; 
                 }
             });
-            // NEW: Aim Launchers (Rotate Clockwise)
             launchers.forEach(l => {
                 Body.setAngularVelocity(l, 0.15);
             });
         }
         if (keys['arrowleft'] || keys['a']) {
-            // Drive Cars
             bodies.forEach(b => {
                 if (b.customType === 'wheel') {
                     b.torque -= 0.3 * b.mass;
                 }
             });
-            // NEW: Aim Launchers (Rotate Counter-Clockwise)
             launchers.forEach(l => {
                 Body.setAngularVelocity(l, -0.15);
             });
         }
 
+        // ... Blackhole logic ...
         blackholes.forEach(bh => {
             const gravity = engine.world.gravity;
             Body.applyForce(bh, bh.position, {
@@ -1114,6 +1252,44 @@
             if (!body.ai) return;
             const ai = body.ai;
 
+            // NEW: COLD MECHANIC
+            if (ai.temp === 'cold') {
+                ai.coldTimer--;
+                if (body.allParts) {
+                    body.allParts.forEach(p => {
+                        if (!p.originalColor) p.originalColor = p.render.fillStyle;
+                        p.render.fillStyle = '#a5f3fc'; 
+                    });
+                }
+                if (Math.random() < 0.3) {
+                    Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.15);
+                }
+                if (Math.random() < 0.02 && ai.talkText === "") {
+                    const coldLines = ["Brrr!", "So cold...", "Freezing!", "Icy!", "Teeth chattering...", "Cold!"];
+                    ai.talkText = coldLines[Math.floor(Math.random() * coldLines.length)];
+                    setTimeout(() => { if (ai.temp === 'cold') ai.talkText = ""; }, 1000);
+                }
+                if (ai.coldTimer <= 0) {
+                    ai.temp = 'normal';
+                    ai.talkText = "";
+                    if (body.allParts) {
+                        body.allParts.forEach(p => {
+                            if (p.originalColor) p.render.fillStyle = p.originalColor;
+                        });
+                    }
+                }
+            }
+
+            // NEW: TNT FEAR (High Priority)
+            // They check for TNT within 200px. If found, they panic.
+            const nearbyTNT = interactables.find(b => b.customType === 'tnt' && Vector.magnitude(Vector.sub(body.position, b.position)) < 200);
+            if (nearbyTNT && ai.state !== 'panic' && ai.state !== 'driving') {
+                ai.state = 'panic';
+                ai.fearTarget = nearbyTNT.position;
+                ai.nextActionTime = time + 2500;
+                ai.talkText = "BOMB!";
+            }
+
             const isGrabbed = mouseConstraint.body && mouseConstraint.body.groupId === body.groupId;
             
             if (ai.state === 'panic') {
@@ -1140,6 +1316,7 @@
                 ai.state = 'walk'; 
             }
 
+            // Timid Personality
             if (ai.personality === 'timid' && ai.state === 'walk') {
                 for (let obj of interactables) {
                     const dist = Vector.magnitude(Vector.sub(body.position, obj.position));
@@ -1153,10 +1330,14 @@
                 }
             }
 
+            // Explorer - Find Objects
             if (ai.personality === 'explorer' && ai.state === 'walk' && !ai.targetBody && time > ai.nextActionTime) {
                 let closest = null;
                 let minDist = 600; 
                 for (let obj of interactables) {
+                    // NEW: Don't chase TNT or Heavy blocks if timid
+                    if (obj.customType === 'tnt') continue;
+                    
                     const dist = Vector.magnitude(Vector.sub(body.position, obj.position));
                     if (dist < minDist) {
                         minDist = dist;
@@ -1168,12 +1349,16 @@
                     ai.nextActionTime = time + 5000; 
                 }
             }
-            
-            if (ai.targetBody && ai.state === 'walk') {
+
+            // Explorer - Track Object
+            if (ai.targetBody && (ai.state === 'walk' || ai.state === 'holding')) {
                 if (Composite.allBodies(world).includes(ai.targetBody)) {
                     const dx = ai.targetBody.position.x - body.position.x;
-                    ai.direction = dx > 0 ? 1 : -1;
+                    // If not holding it, face it
+                    if (!ai.holdingConstraint) ai.direction = dx > 0 ? 1 : -1;
+                    
                     if (Math.abs(dx) < 40 || time > ai.nextActionTime) {
+                        // Reached object
                         ai.targetBody = null;
                         const exploreLines = ["Hmm...", "Interesting.", "What is that?", "Shiny...", "Analyzing...", "Curious.", "Nice."];
                         ai.talkText = exploreLines[Math.floor(Math.random() * exploreLines.length)];
@@ -1184,6 +1369,47 @@
                 }
             }
 
+            // NEW: PICK UP ITEMS (Explorer Only)
+            if (ai.personality === 'explorer' && ai.state === 'walk' && !ai.holdingConstraint && !ai.vehicle && time > ai.nextActionTime) {
+                // Find loose item near feet
+                const pickupRange = 60;
+                const item = interactables.find(b => 
+                    Vector.magnitude(Vector.sub(body.position, b.position)) < pickupRange &&
+                    b.mass < 15 && // Only light items
+                    b.customType !== 'carBody' && b.customType !== 'tnt' && b.customType !== 'blackhole'
+                );
+
+                if (item) {
+                    ai.state = 'holding';
+                    ai.talkText = "Got it!";
+                    // Attach to arm (Approx index 2)
+                    const arm = body.allParts ? body.allParts[2] : body;
+                    ai.holdingConstraint = Constraint.create({
+                        bodyA: arm, bodyB: item,
+                        pointA: {x: 0, y: 15}, pointB: {x: 0, y: 0},
+                        stiffness: 0.1, length: 1, render: { visible: true, strokeStyle: '#fff' }
+                    });
+                    Composite.add(world, ai.holdingConstraint);
+
+                    // Throw after 2-4s
+                    setTimeout(() => {
+                        if (ai.holdingConstraint) {
+                            Composite.remove(world, ai.holdingConstraint);
+                            ai.holdingConstraint = null;
+                            ai.state = 'walk';
+                            // Throw Force
+                            Body.applyForce(item, item.position, {
+                                x: ai.direction * 0.05 * item.mass,
+                                y: -0.05 * item.mass
+                            });
+                            ai.talkText = "Yeet!";
+                            ai.nextActionTime = Date.now() + 2000; // Cooldown
+                        }
+                    }, 2000 + Math.random() * 2000);
+                }
+            }
+
+            // Car Driving Check
             if (ai.state === 'walk' && !ai.vehicle && Math.random() < 0.02) { 
                 const cars = interactables.filter(b => b.customType === 'carBody' && !b.driver);
                 for (let car of cars) {
@@ -1249,7 +1475,7 @@
                 body.relatedHead.torque += hTorque * body.relatedHead.mass;
             }
 
-            if ((ai.state === 'walk' || ai.state === 'panic') && body.legs) {
+            if ((ai.state === 'walk' || ai.state === 'panic' || ai.state === 'holding') && body.legs) {
                 const walkSpeed = ai.state === 'panic' ? 0.015 : 0.008;
                 const stride = 0.8; 
                 
@@ -1300,8 +1526,8 @@
 
             if (ai.socialCooldown > 0) ai.socialCooldown--;
 
-            if (ai.state === 'walk' || ai.state === 'panic') {
-                if (ai.state === 'walk' && !ai.targetBody && time > ai.nextActionTime) {
+            if (ai.state === 'walk' || ai.state === 'panic' || ai.state === 'holding') {
+                if (ai.state !== 'panic' && !ai.targetBody && time > ai.nextActionTime) {
                     if (Math.random() < 0.3) ai.direction *= -1;
                     ai.nextActionTime = time + 2000 + Math.random() * 2000;
                 }
@@ -1309,9 +1535,32 @@
                 const speed = ai.state === 'panic' ? 0.005 : 0.0025;
                 Body.applyForce(body, body.position, { x: speed * ai.direction * body.mass, y: 0 });
 
+                // NEW: OBSTACLE KICKING
+                // If moving slowly (stuck) and something is in front, kick it.
                 if (Math.abs(body.velocity.x) < 0.3) {
                     ai.isStuckCount++;
+                    
+                    // Look ahead
+                    const scanX = body.position.x + (40 * ai.direction);
+                    const scanY = body.position.y + 10; // Feet level
+                    // Simple check: check interactables near scan point
+                    const obstacle = interactables.find(b => 
+                        !b.isStatic && 
+                        Math.abs(b.position.x - scanX) < 30 && 
+                        Math.abs(b.position.y - scanY) < 40
+                    );
+
+                    if (obstacle) {
+                        // Kick!
+                        Body.applyForce(obstacle, obstacle.position, { 
+                            x: 0.03 * ai.direction * obstacle.mass, 
+                            y: -0.02 * obstacle.mass 
+                        });
+                        if (Math.random() < 0.1) ai.talkText = "Move!";
+                    }
+
                     if (ai.isStuckCount > 30) {
+                        // Jump
                         Body.applyForce(body, body.position, { x: 0, y: -0.02 * body.mass });
                         if (ai.isStuckCount > 80) {
                             ai.direction *= -1;
@@ -1476,6 +1725,139 @@
                 ctx.moveTo(-w/2 + 4, -h/2 + 4); ctx.lineTo(w/2 - 4, h/2 - 4);
                 ctx.moveTo(w/2 - 4, -h/2 + 4); ctx.lineTo(-w/2 + 4, h/2 - 4);
                 ctx.stroke();
+            }
+            // NEW: TNT Rendering
+            if (body.customType === 'tnt') {
+                const w = body.bounds.max.x - body.bounds.min.x;
+                const h = body.bounds.max.y - body.bounds.min.y;
+                // Main Box
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-w/2, -h/2, w, h);
+                // Stripes
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(-w/2, -10, w, 20);
+                // Text
+                ctx.fillStyle = '#7f1d1d'; // Dark Red
+                ctx.font = '900 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("TNT", 0, 0);
+                // Border
+                ctx.strokeStyle = '#b91c1c';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-w/2, -h/2, w, h);
+            }
+            // NEW: Ice Rendering
+            if (body.customType === 'ice') {
+                const w = body.bounds.max.x - body.bounds.min.x;
+                const h = body.bounds.max.y - body.bounds.min.y;
+                // Semi-transparent body
+                ctx.fillStyle = 'rgba(207, 250, 254, 0.5)'; 
+                ctx.fillRect(-w/2, -h/2, w, h);
+                // White border
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-w/2, -h/2, w, h);
+                // Glint/Reflection
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.moveTo(-w/2 + 10, -h/2 + 5);
+                ctx.lineTo(0, -h/2 + 25);
+                ctx.stroke();
+            }
+            // NEW: Balloon Rendering
+            if (body.customType === 'balloon') {
+                const r = body.circleRadius;
+                // Draw String
+                ctx.beginPath();
+                ctx.moveTo(0, r);
+                ctx.quadraticCurveTo(5, r + 15, 0, r + 30);
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw Balloon Body
+                ctx.fillStyle = body.render.fillStyle;
+                ctx.beginPath();
+                ctx.ellipse(0, -2, r, r * 1.15, 0, 0, 2 * Math.PI); // Slightly oval
+                ctx.fill();
+                
+                // Shine
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(-r * 0.3, -r * 0.3, r * 0.2, r * 0.1, Math.PI / 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Knot
+                ctx.fillStyle = body.render.fillStyle;
+                ctx.beginPath();
+                ctx.moveTo(-4, r-2);
+                ctx.lineTo(4, r-2);
+                ctx.lineTo(0, r+4);
+                ctx.fill();
+            }
+            // NEW: Bouncy Ball Rendering
+            if (body.customType === 'bouncy') {
+                const r = body.circleRadius;
+                ctx.fillStyle = '#a3e635';
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Stripe
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.7, 0.5, 2.5); // Curved line
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.7, 3.5, 5.5); // Curved line
+                ctx.stroke();
+            }
+            // NEW: Hexagon Rendering
+            if (body.customType === 'hexagon') {
+                ctx.fillStyle = body.render.fillStyle;
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 3;
+                
+                ctx.beginPath();
+                // Matter.js polygons aren't centered at 0,0 locally in the same way relative to vertices
+                // But since we translated ctx to body.position, we can just draw lines between vertices
+                // relative to that position.
+                // Actually, body.vertices are World Coordinates.
+                // We need to draw based on local offset.
+                
+                // Simpler approach: Draw 6 lines based on angle/radius since we know it's regular
+                const r = 35 * (spawnScale); // Approximation, better to use vertices for collision accuracy
+                // Using vertices is accurate to physics:
+                const vertices = body.vertices;
+                ctx.moveTo(vertices[0].x - x, vertices[0].y - y); // Convert to local
+                for (let j = 1; j < vertices.length; j++) {
+                    ctx.lineTo(vertices[j].x - x, vertices[j].y - y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Inner detail
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath();
+                ctx.arc(0, 0, 10 * spawnScale, 0, Math.PI*2);
+                ctx.fill();
+            }
+            // NEW: Domino Rendering
+            if (body.customType === 'domino') {
+                const w = body.bounds.max.x - body.bounds.min.x;
+                const h = body.bounds.max.y - body.bounds.min.y;
+                // Divider line
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(-w/2 + 2, -1, w - 4, 2);
+                // Dots (Simplified)
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.arc(0, -h/4, 2, 0, Math.PI*2);
+                ctx.arc(0, h/4, 2, 0, Math.PI*2);
+                ctx.fill();
             }
             if (body.customType === 'heavyBlock') {
                 const w = body.bounds.max.x - body.bounds.min.x;
@@ -1769,6 +2151,11 @@
                     type = 'metal';
                 }
                 
+                // NEW: Ice Material Check
+                if (bodyA.customType === 'ice' || bodyB.customType === 'ice') {
+                    type = 'ice';
+                }
+                
                 playImpactSound(speed, type);
 
                 // Create Sparks for Metal-on-Metal or High Speed Metal
@@ -1778,9 +2165,31 @@
                         createSparks(contact.vertex.x, contact.vertex.y, Math.floor(speed / 2));
                     }
                 }
+                
+                // NEW: Freezing Logic (Ragdoll touches Ice)
+                if (bodyA.customType === 'ice' || bodyB.customType === 'ice') {
+                    const ice = bodyA.customType === 'ice' ? bodyA : bodyB;
+                    const other = bodyA === 'ice' ? bodyB : bodyA;
+                    
+                    // Identify if 'other' belongs to a ragdoll
+                    let torso = null;
+                    if (other.customType === 'ragdoll') torso = other;
+                    else if (other.relatedTorso) torso = other.relatedTorso;
+                    
+                    if (torso && torso.ai) {
+                        // Freeze them!
+                        torso.ai.temp = 'cold';
+                        torso.ai.coldTimer = 300; // Stay cold for ~5 seconds
+                    }
+                }
             }
 
-            if (speed > 24) {
+            // TRIGGER EXPLOSION ON IMPACT
+            // NEW: TNT is more sensitive (threshold 8 instead of 24)
+            const isTNT = bodyA.customType === 'tnt' || bodyB.customType === 'tnt';
+            const explosionThreshold = isTNT ? 8 : 24;
+
+            if (speed > explosionThreshold) {
                 if (bodyA.isTarget && !bodyA.isExploding && now - (bodyA.createdAt || 0) > 1000) {
                     triggerExplosion(bodyA);
                 }
