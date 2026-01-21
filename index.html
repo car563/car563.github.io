@@ -363,7 +363,7 @@
     <button class="play-btn" onclick="togglePause()">PLAY</button>
     <div class="menu-hint">Press <b>ESC</b> to Pause / Resume</div>
     <div class="crash-warning">Dont get mad at me if you're PC crashes!</div>
-    <div class="version-text">v2.1 Pro</div>
+    <div class="version-text">v2.3 Pro</div>
 </div>
 
 <!-- NEW: FPS Counter Element -->
@@ -444,6 +444,15 @@
             <span id="range-val" class="editable-val">600</span>
         </div>
         <input type="range" id="range-slider" min="100" max="100000" step="50" value="600">
+    </div>
+
+    <!-- NEW: NPC Speed Slider -->
+    <div class="control-group">
+        <div class="slider-label">
+            <span>NPC Speed</span>
+            <span id="npc-speed-val" class="editable-val">1.0x</span>
+        </div>
+        <input type="range" id="npc-speed-slider" min="0.1" max="5.0" step="0.1" value="1.0">
     </div>
 
     <!-- MOVED: Spawn Buttons Section -->
@@ -771,6 +780,8 @@
     // NEW: Global Explosion Settings
     let explosionPower = 1.0;
     let explosionRange = 600;
+    // NEW: NPC Speed Multiplier
+    let npcSpeedMult = 1.0;
 
     function selectAndSpawn(type) {
         currentSpawnType = type;
@@ -1532,7 +1543,10 @@
                     ai.nextActionTime = time + 2000 + Math.random() * 2000;
                 }
 
-                const speed = ai.state === 'panic' ? 0.005 : 0.0025;
+                // UPDATED: Apply NPC Speed Multiplier
+                const baseSpeed = ai.state === 'panic' ? 0.005 : 0.0025;
+                const speed = baseSpeed * npcSpeedMult;
+                
                 Body.applyForce(body, body.position, { x: speed * ai.direction * body.mass, y: 0 });
 
                 // NEW: OBSTACLE KICKING
@@ -2159,11 +2173,30 @@
                 playImpactSound(speed, type);
 
                 // Create Sparks for Metal-on-Metal or High Speed Metal
-                if (type === 'metal' && speed > 5) {
-                    const contact = pair.contacts[0];
-                    if (contact) {
-                        createSparks(contact.vertex.x, contact.vertex.y, Math.floor(speed / 2));
+                // UPDATED: Lowered threshold from 5 to 2 for easier sparks on hit
+                if (type === 'metal' && speed > 2) {
+                    // Robust contact point detection
+                    let sparkX = bodyA.position.x;
+                    let sparkY = bodyA.position.y;
+                    
+                    // SAFETY CHECK: Ensure contact exists before accessing vertex
+                    if (pair.contacts && pair.contacts.length > 0) {
+                        const contact = pair.contacts[0];
+                        if (contact && contact.vertex) {
+                            sparkX = contact.vertex.x;
+                            sparkY = contact.vertex.y;
+                        } else {
+                            // Fallback if vertex is missing
+                            sparkX = (bodyA.position.x + bodyB.position.x) / 2;
+                            sparkY = (bodyA.position.y + bodyB.position.y) / 2;
+                        }
+                    } else {
+                        // Fallback to midpoint if no specific contact found
+                        sparkX = (bodyA.position.x + bodyB.position.x) / 2;
+                        sparkY = (bodyA.position.y + bodyB.position.y) / 2;
                     }
+                    
+                    createSparks(sparkX, sparkY, Math.floor(speed));
                 }
                 
                 // NEW: Freezing Logic (Ragdoll touches Ice)
@@ -2185,9 +2218,17 @@
             }
 
             // TRIGGER EXPLOSION ON IMPACT
-            // NEW: TNT is more sensitive (threshold 8 instead of 24)
+            // NEW: Material-based Explosion Thresholds
+            let explosionThreshold = 24; // Default (Wood crates, etc.)
+
             const isTNT = bodyA.customType === 'tnt' || bodyB.customType === 'tnt';
-            const explosionThreshold = isTNT ? 8 : 24;
+            const isMetal = bodyA.customType === 'heavyBlock' || bodyB.customType === 'heavyBlock';
+
+            if (isTNT) {
+                explosionThreshold = 8; // Very sensitive
+            } else if (isMetal) {
+                explosionThreshold = 60; // Very tough (Hardened Steel)
+            }
 
             if (speed > explosionThreshold) {
                 if (bodyA.isTarget && !bodyA.isExploding && now - (bodyA.createdAt || 0) > 1000) {
@@ -2195,6 +2236,55 @@
                 }
                 if (bodyB.isTarget && !bodyB.isExploding && now - (bodyB.createdAt || 0) > 1000) {
                     triggerExplosion(bodyB);
+                }
+            }
+        }
+    });
+
+    // NEW: Dragging/Scraping Sparks Logic
+    Events.on(engine, 'collisionActive', (event) => {
+        const pairs = event.pairs;
+        
+        for (let i = 0; i < pairs.length; i++) {
+            const pair = pairs[i];
+            const bodyA = pair.bodyA;
+            const bodyB = pair.bodyB;
+
+            // Check if one of the colliding bodies is metal
+            const isMetal = (
+                bodyA.customType === 'heavyBlock' || bodyB.customType === 'heavyBlock' || 
+                bodyA.customType === 'carBody' || bodyB.customType === 'carBody' ||
+                bodyA.customType === 'launcher' || bodyB.customType === 'launcher'
+            );
+
+            if (isMetal) {
+                const relativeMotion = Vector.sub(bodyA.velocity, bodyB.velocity);
+                const speed = Vector.magnitude(relativeMotion);
+
+                // If sliding/scraping (speed > 0.5) - Threshold lowered for more sparks
+                if (speed > 0.5) {
+                    // Increased probability for better visual feedback
+                    if (Math.random() < Math.min(0.8, speed * 0.2)) {
+                        let sparkX, sparkY;
+                        
+                        // SAFETY CHECK: Ensure contact exists before accessing vertex
+                        if (pair.contacts && pair.contacts.length > 0) {
+                            const contact = pair.contacts[0];
+                            if (contact && contact.vertex) {
+                                sparkX = contact.vertex.x;
+                                sparkY = contact.vertex.y;
+                            } else {
+                                sparkX = (bodyA.position.x + bodyB.position.x) / 2;
+                                sparkY = (bodyA.position.y + bodyB.position.y) / 2;
+                            }
+                        } else {
+                            // Fallback midpoint
+                            sparkX = (bodyA.position.x + bodyB.position.x) / 2;
+                            sparkY = (bodyA.position.y + bodyB.position.y) / 2;
+                        }
+
+                        createSparks(sparkX, sparkY, 1);
+                    }
                 }
             }
         }
@@ -2582,6 +2672,18 @@
 
     setupEditable('range-val', 'range-slider', '', (val) => {
         explosionRange = val;
+    });
+
+    // NEW: NPC Speed Slider Logic
+    const npcSpeedSlider = document.getElementById('npc-speed-slider');
+    const npcSpeedVal = document.getElementById('npc-speed-val');
+    npcSpeedSlider.addEventListener('input', (e) => {
+        npcSpeedMult = parseFloat(e.target.value);
+        npcSpeedVal.innerText = npcSpeedMult.toFixed(1) + 'x';
+    });
+
+    setupEditable('npc-speed-val', 'npc-speed-slider', 'x', (val) => {
+        npcSpeedMult = val;
     });
 
 </script>
