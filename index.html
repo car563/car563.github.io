@@ -433,6 +433,15 @@
         <span class="slider-label" style="margin: 0;">Item Limit (Anti-Lag)</span>
         <input type="checkbox" id="limit-toggle" checked style="accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer;">
     </div>
+
+    <!-- NEW: FPS Slider -->
+    <div class="control-group">
+        <div class="slider-label">
+            <span>Max FPS</span>
+            <span id="fps-val">60</span>
+        </div>
+        <input type="range" id="fps-slider" min="30" max="150" step="30" value="60">
+    </div>
 </div>
 
 <div id="spawn-menu">
@@ -563,15 +572,31 @@
     let lastTime = 0;
     let animationFrameId = null;
 
+    // NEW: FPS Control Variables
+    let targetFPS = 60;
+    let frameInterval = 1000 / targetFPS;
+    let lastRenderTime = 0;
+
     function gameLoop(time) {
         if (!isGameRunning) return;
         
         animationFrameId = requestAnimationFrame(gameLoop);
 
-        // Initialize lastTime on first frame
+        // Initialize timers on first frame
         if (!lastTime) {
             lastTime = time;
+            lastRenderTime = time;
             return;
+        }
+
+        // FPS THROTTLING
+        // If not set to MAX (150 in slider), throttle the rendering
+        if (targetFPS < 150) {
+            const elapsed = time - lastRenderTime;
+            if (elapsed < frameInterval) return; // Skip this frame
+            
+            // Adjust lastRenderTime to maintain consistent intervals
+            lastRenderTime = time - (elapsed % frameInterval);
         }
 
         const dt = time - lastTime;
@@ -604,8 +629,9 @@
             homeMenu.classList.add('hidden');
             document.body.classList.remove('menu-active');
             
-            // Reset timer to prevent jump
+            // Reset timers to prevent jumps
             lastTime = 0;
+            lastRenderTime = 0;
             // Start Loop
             animationFrameId = requestAnimationFrame(gameLoop);
             
@@ -985,11 +1011,11 @@
 
         // --- PERFORMANCE: ANTI-LAG SYSTEM ---
         // If too many items, delete the oldest dynamic ones (excluding walls/blackholes)
-        // Limit increased to 600 dynamic bodies
+        // Limit increased to 3000 dynamic bodies
         // NEW: Check toggle state before deleting
         if (isLimitActive) {
             const dynamicBodies = bodies.filter(b => !b.isStatic && b.customType !== 'blackhole');
-            if (dynamicBodies.length > 600) {
+            if (dynamicBodies.length > 3000) {
                 // Sort by creation time (oldest first) or just take the first ones since array order usually matches
                 // We remove the oldest 5 to quickly get back under limit
                 const toRemove = dynamicBodies.slice(0, 5); 
@@ -1968,6 +1994,22 @@
     const countVal = document.getElementById('count-val');
     countSlider.addEventListener('input', (e) => {
         countVal.innerText = e.target.value;
+    });
+
+    // NEW: FPS Slider Logic
+    const fpsSlider = document.getElementById('fps-slider');
+    const fpsVal = document.getElementById('fps-val');
+    fpsSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        if (val >= 150) {
+            targetFPS = 999; // Treat as unlimited
+            fpsVal.innerText = "MAX";
+            frameInterval = 0;
+        } else {
+            targetFPS = val;
+            fpsVal.innerText = val;
+            frameInterval = 1000 / targetFPS;
+        }
     });
 
     // NEW: Toggle for Anti-Lag Item Limit
