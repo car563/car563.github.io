@@ -1537,6 +1537,37 @@
 
             if (ai.socialCooldown > 0) ai.socialCooldown--;
 
+            // NEW: KNOCKOUT STATE (The "Coma")
+            if (ai.state === 'knockout') {
+                ai.knockoutTimer--;
+                
+                // 1. Go Limp (No torque/balance)
+                // 2. Add "Stars" visual effect (handled in renderer)
+                // 3. Wake up
+                if (ai.knockoutTimer <= 0) {
+                    ai.state = 'walk';
+                    ai.talkText = "Ugh... what happened?";
+                    setTimeout(() => ai.talkText = "", 2000);
+                }
+                return; // Skip movement logic
+            }
+
+            // NEW: STUBBED TOE HOP
+            if (ai.state === 'stubbed_toe') {
+                ai.knockoutTimer--; // Reuse timer for hop duration
+                
+                // Hop Logic: Apply small upward force
+                if (Math.random() < 0.1) {
+                    Body.applyForce(body, body.position, { x: 0, y: -0.015 * body.mass });
+                }
+                
+                if (ai.knockoutTimer <= 0) {
+                    ai.state = 'walk';
+                    ai.talkText = "";
+                }
+                return;
+            }
+
             if (ai.state === 'walk' || ai.state === 'panic' || ai.state === 'holding') {
                 if (ai.state !== 'panic' && !ai.targetBody && time > ai.nextActionTime) {
                     if (Math.random() < 0.3) ai.direction *= -1;
@@ -1982,12 +2013,47 @@
                 }
 
                 ctx.beginPath();
-                if (state === 'scared' || state === 'panic') {
+                // UPDATED: Eyes logic
+                if (state === 'knockout') {
+                    // X_X Eyes
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    
+                    // Left Eye X
+                    ctx.moveTo(-6, -4); ctx.lineTo(-2, 0);
+                    ctx.moveTo(-2, -4); ctx.lineTo(-6, 0);
+                    
+                    // Right Eye X
+                    ctx.moveTo(2, -4); ctx.lineTo(6, 0);
+                    ctx.moveTo(6, -4); ctx.lineTo(2, 0);
+                    ctx.stroke();
+                    
+                    // NEW: Spinning Stars Visual
+                    const time = performance.now() * 0.005;
+                    ctx.fillStyle = '#fde047'; // Yellow
+                    for(let k=0; k<3; k++) {
+                        const angle = time + (k * (Math.PI * 2 / 3));
+                        const sx = Math.cos(angle) * 12;
+                        const sy = Math.sin(angle) * 6 - 15; // Elliptical orbit above head
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, 2, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+
+                } else if (state === 'scared' || state === 'panic') {
                     ctx.fillStyle = 'white';
                     ctx.arc(-4, -2, 2.5, 0, 2 * Math.PI); ctx.arc(4, -2, 2.5, 0, 2 * Math.PI); ctx.fill();
                     ctx.fillStyle = 'black';
                     ctx.beginPath();
                     ctx.arc(-4, -2, 1, 0, 2 * Math.PI); ctx.arc(4, -2, 1, 0, 2 * Math.PI); ctx.fill();
+                } else if (state === 'stubbed_toe') {
+                    // >_< Eyes
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-6, -1); ctx.lineTo(-2, -3); ctx.lineTo(-6, -5);
+                    ctx.moveTo(6, -1); ctx.lineTo(2, -3); ctx.lineTo(6, -5);
+                    ctx.stroke();
                 } else {
                     ctx.arc(-4, -2, 1.5, 0, 2 * Math.PI); ctx.arc(4, -2, 1.5, 0, 2 * Math.PI); ctx.fill();
                 }
@@ -2000,6 +2066,12 @@
                     ctx.stroke();
                 } else if (state === 'talk') {
                     ctx.moveTo(-2, 3); ctx.lineTo(2, 3);
+                    ctx.stroke();
+                } else if (state === 'stubbed_toe') {
+                    ctx.ellipse(0, 4, 3, 4, 0, 0, 2 * Math.PI); // Screaming mouth
+                    ctx.stroke();
+                } else if (state === 'knockout') {
+                    ctx.moveTo(-2, 3); ctx.lineTo(2, 3); // Flat mouth
                     ctx.stroke();
                 } else {
                     ctx.arc(0, 2, 5, 0.2, Math.PI - 0.2); 
@@ -2213,6 +2285,46 @@
                         // Freeze them!
                         torso.ai.temp = 'cold';
                         torso.ai.coldTimer = 300; // Stay cold for ~5 seconds
+                    }
+                }
+                
+                // NEW: Ragdoll Injury Logic
+                // We check if a part of a person hit something hard
+                let ragdollPart = null;
+                if (bodyA.customType === 'ragdoll' || bodyA.relatedTorso) ragdollPart = bodyA;
+                else if (bodyB.customType === 'ragdoll' || bodyB.relatedTorso) ragdollPart = bodyB;
+
+                if (ragdollPart) {
+                    const torso = ragdollPart.customType === 'ragdoll' ? ragdollPart : ragdollPart.relatedTorso;
+                    if (torso && torso.ai) {
+                        
+                        // 1. KNOCKOUT CHECK (High Speed Impact)
+                        // If hit hard (speed > 12) and NOT exploding
+                        if (speed > 12 && torso.ai.state !== 'knockout') {
+                            torso.ai.state = 'knockout';
+                            torso.ai.knockoutTimer = 300 + Math.random() * 200; // ~5-8 seconds
+                            torso.ai.talkText = "Zzz...";
+                            // Drop held items
+                            if (torso.ai.holdingConstraint) {
+                                Composite.remove(world, torso.ai.holdingConstraint);
+                                torso.ai.holdingConstraint = null;
+                            }
+                        }
+                        
+                        // 2. STUBBED TOE CHECK (Low Speed, Leg Impact)
+                        // If hit foot/leg (speed 3-10)
+                        else if (speed > 3 && speed < 10 && torso.ai.state === 'walk') {
+                            // Check if the part hitting is a leg (approximate by Y position relative to torso or if it's in the 'legs' list)
+                            // We didn't explicitly label legs 'leg' in customType, but we can check the legs object
+                            const isLeg = (torso.legs && (ragdollPart === torso.legs.left || ragdollPart === torso.legs.right));
+                            
+                            if (isLeg) {
+                                torso.ai.state = 'stubbed_toe';
+                                torso.ai.knockoutTimer = 100; // Hop for ~1.5s
+                                const lines = ["Ouch!", "My toe!", "Yeowch!", "Ahh!", "Pain!"];
+                                torso.ai.talkText = lines[Math.floor(Math.random() * lines.length)];
+                            }
+                        }
                     }
                 }
             }
