@@ -137,6 +137,18 @@
             opacity: 0.8;
         }
 
+        /* NEW: Crash Warning Style */
+        .crash-warning {
+            position: absolute;
+            bottom: 30px;
+            color: #ef4444;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
         /* Hide game UI when menu is open */
         body.menu-active #ui-left,
         body.menu-active #fps-counter,
@@ -340,6 +352,7 @@
     <div class="title-large">Physics Lab</div>
     <button class="play-btn" onclick="togglePause()">PLAY</button>
     <div class="menu-hint">Press <b>ESC</b> to Pause / Resume</div>
+    <div class="crash-warning">Dont get mad at me if you're PC crashes!</div>
 </div>
 
 <!-- NEW: FPS Counter Element -->
